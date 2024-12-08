@@ -8,7 +8,7 @@ import pandas as pd
 ag1, ag2 = Agent(), Agent()
 
 #load q-table
-with open('qtable_v3.pickle', 'rb') as f:
+with open('src/giotto/qtable_v3.pickle', 'rb') as f:
   q_table = pickle.load(f)
 ag1.load_q_table(q_table)
 ag2.load_q_table(q_table)

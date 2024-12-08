@@ -1,0 +1,7 @@
+name: giottoenv
+channels:
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - python=3.12
+prefix: /Users/nicola/miniconda3/envs/giottoenv
