@@ -1,0 +1,8 @@
+from enum import IntEnum
+
+class States(IntEnum):
+    """Render states for Connect4 Pygame."""
+    MENU = 0
+    GAME = 1
+    GAMEOVER = 2
+    CLOSE = 3

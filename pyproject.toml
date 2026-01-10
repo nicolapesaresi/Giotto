@@ -1,15 +1,17 @@
 [tool.poetry]
 name = "giotto"
-version = "1.0.0"
+version = "2.0.0"
 description = "Tic Tac Toe AI"
 authors = ["Nicola Pesaresi"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10"
 numpy = "^2.1.3"
 pandas = "^2.2.3"
 torch = "^2.5.1"
+tqdm = "^4.67.1"
+pygame = "^2.6.1"
 
 
 [build-system]
