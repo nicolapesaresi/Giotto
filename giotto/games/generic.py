@@ -18,6 +18,7 @@ class GenericGame:
         player_types: dict,
         screen: pygame.Surface | None = None,
         start_at_menu: bool = True,
+        from_launcher: bool = False
     ):
         """Instantiates generic pygame renderer.
         Args:
@@ -26,9 +27,11 @@ class GenericGame:
             player_types: supported player types for the chosen game.
             screen: None for desktop mode, pygame screen for browser.
             start_at_menu: whether pygame starts form main menu or runs directly.
+            from_launcher: whether game was started from launcher.
         """
         self.settings = settings_module
         self.player_types = player_types # supported agents for the game
+        self.from_launcher = from_launcher
 
         if screen is None:
             self.setup_pygame()
@@ -62,7 +65,7 @@ class GenericGame:
     def main_menu(self) -> States:
         """Renders main menu of the game."""
         if not self.menu:
-            self.menu = MainMenu(self.menu_selections, self.settings, States)
+            self.menu = MainMenu(self.menu_selections, self.settings, self.from_launcher)
         self.menu.draw(self.screen)
         outcome = self.menu.handle_events()
         if isinstance(outcome, tuple):
@@ -139,7 +142,7 @@ class GenericGame:
                 result = -1
             else:
                 result = getattr(self.env, "signs", lambda: [])[winner]
-            self.gameover = GameOver(result, self.settings, States)
+            self.gameover = GameOver(result, self.settings)
         self.draw_screen()
         self.gameover.draw(self.screen)
         render_state = self.gameover.handle_events()

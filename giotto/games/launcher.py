@@ -1,7 +1,7 @@
 import pygame
 import giotto.games.settings.settings_global as settings
-from giotto.games.tris import PygameRenderer as TrisGame
-from giotto.games.connect4 import PygameConnect4 as Connect4Game
+from giotto.games.tris import PygameTris
+from giotto.games.connect4 import PygameConnect4
 from giotto.games.ui.buttons import Button
 
 
@@ -59,10 +59,10 @@ class PygameLauncher:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     pos = event.pos
                     if self.tictactoe_btn.clicked(pos):
-                        game = TrisGame(screen=self.screen, start_at_menu=True)
+                        game = PygameTris(screen=self.screen, start_at_menu=True, from_launcher = True)
                         game.run()
                     elif self.connect4_btn.clicked(pos):
-                        game = Connect4Game(screen=self.screen, start_at_menu=True)
+                        game = PygameConnect4(screen=self.screen, start_at_menu=True, from_launcher = True)
                         game.run()
             self.draw()
             pygame.display.flip()

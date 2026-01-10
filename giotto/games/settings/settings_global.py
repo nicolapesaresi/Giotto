@@ -7,6 +7,6 @@ FPS = 30
 
 BACKGROUND_COLOR = (30, 30, 30)
 GRID_COLOR = "white"
-O_COLOR = "lightblue"
+O_COLOR = "green"
 X_COLOR = "red"
 

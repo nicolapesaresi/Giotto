@@ -2,7 +2,14 @@ import pygame
 
 
 class TextSprite(pygame.sprite.Sprite):
+    """Generic text sprite."""
     def __init__(self, text: str, font: pygame.font.Font, color: tuple, pos: tuple[int, int]):
+        """Instantiates text sprite.
+        Args:
+            text: text to display.
+            font: font to use.
+            color: text color.
+            pos: top-left position of the text."""
         super().__init__()
         self.font = font
         self.color = color
@@ -11,6 +18,7 @@ class TextSprite(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=pos)
 
     def update_text(self, new_text: str | int):
+        """Updates text content."""
         if isinstance(new_text, int):
             new_text = str(new_text)
         self.text = new_text
@@ -19,16 +27,16 @@ class TextSprite(pygame.sprite.Sprite):
 
 
 class XOSprite(TextSprite):
-    """Generic X/O sprite that supports both single-cell (tris) and row/col (connect4)
-    usage. If `pos_arg` is a single int, it's treated as cell id mapped via
-    `settings.cell_map`. If two ints are provided, they are treated as (row, col)
-    and converted to pixel coordinates using `settings` grid offsets and cell sizes.
-    """
-
+    """Generic X/O sprite."""
     def __init__(self, sign: str, *pos_args, settings_module=None):
+        """Instantiates X/O sprite.
+        Args:
+            sign: "x" or "o".
+            pos_args: position arguments (cell id for tris, row and col for connect4).
+            settings_module: settings module for the game.
+        """
         assert sign in ("o", "x"), "Invalid sign received"
         color = settings_module.O_COLOR if sign == "o" else settings_module.X_COLOR
-        # font size may be tuned by caller via settings
         font = pygame.font.Font(None, settings_module.HEIGHT // 5)
 
         if len(pos_args) == 1:
@@ -48,7 +56,14 @@ class XOSprite(TextSprite):
 
 
 class TurnSprite(pygame.sprite.Sprite):
+    """Sprite to show current turn."""
     def __init__(self, sign: str, turn: int, settings_module):
+        """Instantiates turn sprite.
+        Args:
+            sign: "x" or "o".
+            turn: current turn number.
+            settings_module: settings module for the game.
+        """
         super().__init__()
         assert sign in ("o", "x"), "Invalid sign received"
 
@@ -79,7 +94,13 @@ class TurnSprite(pygame.sprite.Sprite):
 
 
 class ResultSprite(pygame.sprite.Sprite):
+    """Final result sprite."""
     def __init__(self, result: str | int, settings_module):
+        """Instantiates result sprite.
+        Args:
+            result: "x", "o" or -1 for draw.
+            settings_module: settings module for the game.
+        """
         super().__init__()
         assert result in ("o", "x", -1), f"Invalid sign received: {result}"
 
@@ -113,7 +134,12 @@ class ResultSprite(pygame.sprite.Sprite):
 
 
 class TitleText(TextSprite):
+    """Title text sprite."""
     def __init__(self, settings_module):
+        """Instantiates title text sprite.
+        Args:
+            settings_module: settings configuration for the chosen game.
+        """
         text = getattr(settings_module, "GAME_TITLE", "Giotto Game")
         font = pygame.font.Font(None, size=settings_module.HEIGHT // 5)
         color = "yellow"
@@ -123,7 +149,12 @@ class TitleText(TextSprite):
 
 
 class PressToPlayText(TextSprite):
+    """Text sprite prompting to start the game."""
     def __init__(self, settings_module):
+        """Instantiates press to play text sprite.
+        Args:
+            settings_module: settings configuration for the chosen game.
+        """
         text = "Press enter to start a game"
         font = pygame.font.SysFont(None, settings_module.HEIGHT // 20, italic=True)
         color = "white"
@@ -133,7 +164,12 @@ class PressToPlayText(TextSprite):
 
 
 class PressToGoToMenuText(TextSprite):
+    """Text sprite prompting to go back to menu."""
     def __init__(self, settings_module):
+        """Instantiates press to go to menu text sprite.
+        Args:
+            settings_module: settings configuration for the chosen game.
+        """
         text = "Press enter to retry"
         font = pygame.font.SysFont(None, settings_module.HEIGHT // 20, italic=True)
         color = "white"

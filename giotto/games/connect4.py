@@ -10,15 +10,16 @@ from giotto.games.generic import GenericGame
 class PygameConnect4(GenericGame):
     """Pygame renderer for Connect4."""
 
-    def __init__(self, screen: pygame.Surface | None = None, start_at_menu: bool = True):
+    def __init__(self, screen: pygame.Surface | None = None, start_at_menu: bool = True, from_launcher:bool = False):
         """Instantiates pygame renderer for Connect4.
         Args:
             screen: None for desktop mode, pygame screen for browser.
             start_at_menu: whether pygame starts form main menu or runs directly.
+            from_launcher: whether game was started from launcher.
         """
         env = Connect4Env()
         player_types = {pt: AGENT_CLASS_MAP[pt] for pt in settings_connect4.SUPPORTED_PLAYER_TYPES}
-        super().__init__(env, settings_connect4, player_types, screen, start_at_menu)
+        super().__init__(env, settings_connect4, player_types, screen, start_at_menu, from_launcher)
 
     def check_move_click(self, event) -> int | None:
         """Checks human input for move."""
@@ -79,3 +80,10 @@ class PygameConnect4(GenericGame):
         texts = Group()
         texts.add(TurnSprite(self.env.signs[self.env.current_player], self.env.turn_counter + 1, settings_connect4))
         texts.draw(self.screen)
+
+# -----------
+def launch():
+    PygameConnect4().run()
+
+if __name__ == "__main__":
+    launch()
