@@ -5,3 +5,4 @@ class States(IntEnum):
     GAME = 1
     GAMEOVER = 2
     CLOSE = 3
+    LAUNCHER = 4

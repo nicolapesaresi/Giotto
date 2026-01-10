@@ -1,9 +1,12 @@
+CAPTION = "Giotto AI"
+
 WIDTH = 800
 HEIGHT = 600
 
 FPS = 30
 
-BACKGROUND_COLOR = "black"
+BACKGROUND_COLOR = (30, 30, 30)
 GRID_COLOR = "white"
-O_COLOR = "blue"
+O_COLOR = "lightblue"
 X_COLOR = "red"
+

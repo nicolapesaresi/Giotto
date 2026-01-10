@@ -2,6 +2,7 @@ import giotto.games.settings.settings_global as settings_global
 from giotto.games.ui.player_types import PlayerType
 
 GAME_TITLE = "Giotto Connect4"
+CAPTION = settings_global.CAPTION
 
 WIDTH = settings_global.WIDTH
 HEIGHT = settings_global.HEIGHT

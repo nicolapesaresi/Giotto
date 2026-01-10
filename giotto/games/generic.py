@@ -50,7 +50,7 @@ class GenericGame:
         """Sets up pygame and screen for desktop mode."""
         pygame.init()
         self.screen = pygame.display.set_mode((self.settings.WIDTH, self.settings.HEIGHT))
-        pygame.display.set_caption(getattr(self.settings, "CAPTION", "Giotto Game"))
+        pygame.display.set_caption(self.settings.CAPTION)
 
     def set_agents(self, agents: dict):
         """Sets up agents that are going to play the game."""
@@ -72,11 +72,12 @@ class GenericGame:
         else:
             render_state = outcome
 
-        if render_state != States.MENU:
+        if render_state != States.MENU and render_state:
             self.menu = None
-            self.draw_screen()
-            self.draw_text()
-            pygame.display.flip()
+            if render_state not in (States.CLOSE, States.LAUNCHER):
+                self.draw_screen()
+                self.draw_text()
+                pygame.display.flip()
         return render_state
 
     def run(self):
@@ -93,13 +94,17 @@ class GenericGame:
             elif render_state == States.MENU:
                 render_state = self.main_menu()
 
+            elif render_state == States.LAUNCHER:
+                running = False
+                break
+
             elif render_state == States.GAMEOVER:
                 render_state = self.gameover_screen()
 
             elif render_state == States.GAME:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
-                        render_state = States.CLOSE
+                        self.close()
 
                     if self.is_human_turn():
                         action = self.check_move_click(event)
@@ -111,20 +116,23 @@ class GenericGame:
                 if action is not None:
                     self.env.step(action)
 
-                self.draw_screen()
-                self.draw_text()
+                if render_state not in (States.CLOSE, States.LAUNCHER):
+                    self.draw_screen()
+                    self.draw_text()
 
-                if getattr(self.env, "done", False):
+                if self.env.done:
                     render_state = States.GAMEOVER
 
             pygame.display.flip()
             self.clock.tick(self.fps)
-        self.close()
+        if render_state == States.CLOSE:
+            self.close()
+
 
     def gameover_screen(self) -> States:
         """Renders game over screen."""
         if not self.gameover:
-            winner = self.env.info.get("winner") if hasattr(self.env, "info") else None
+            winner = self.env.info.get("winner")
             if winner == -1:
                 result = -1
             elif winner is None:

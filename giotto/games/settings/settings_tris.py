@@ -2,6 +2,7 @@ import giotto.games.settings.settings_global as settings_global
 from giotto.games.ui.player_types import PlayerType
 
 GAME_TITLE = "Giotto TicTacToe"
+CAPTION = settings_global.CAPTION
 
 WIDTH = settings_global.WIDTH
 HEIGHT = settings_global.HEIGHT
@@ -12,16 +13,6 @@ BACKGROUND_COLOR = settings_global.BACKGROUND_COLOR
 GRID_COLOR = settings_global.GRID_COLOR
 O_COLOR = settings_global.O_COLOR
 X_COLOR = settings_global.X_COLOR
-
-WIDTH = 800
-HEIGHT = 600
-
-FPS = 10
-
-BACKGROUND_COLOR = "black"
-GRID_COLOR = "white"
-O_COLOR = "blue"
-X_COLOR = "red"
 
 GRID_WIDTH = int(WIDTH * 0.01)
 GRID_X0 = int(WIDTH * 0.2 ) # topleft x

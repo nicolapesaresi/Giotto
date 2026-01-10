@@ -27,9 +27,9 @@ class XOSprite(TextSprite):
 
     def __init__(self, sign: str, *pos_args, settings_module=None):
         assert sign in ("o", "x"), "Invalid sign received"
-        color = "blue" if sign == "o" else "red"
+        color = settings_module.O_COLOR if sign == "o" else settings_module.X_COLOR
         # font size may be tuned by caller via settings
-        font = pygame.font.Font(None, int(getattr(settings_module, "HEIGHT", 600) // 5))
+        font = pygame.font.Font(None, settings_module.HEIGHT // 5)
 
         if len(pos_args) == 1:
             # cell id (tris)
@@ -53,7 +53,7 @@ class TurnSprite(pygame.sprite.Sprite):
         assert sign in ("o", "x"), "Invalid sign received"
 
         self.text_color = (255, 255, 255)
-        self.sign_color = (0, 0, 255) if sign == "o" else (255, 0, 0)
+        self.sign_color = settings_module.O_COLOR if sign == "o" else settings_module.X_COLOR
 
         font_size = settings_module.HEIGHT // 15
         self.font = pygame.font.Font(None, font_size)
@@ -84,7 +84,7 @@ class ResultSprite(pygame.sprite.Sprite):
         assert result in ("o", "x", -1), f"Invalid sign received: {result}"
 
         self.text_color = (255, 255, 255)
-        self.sign_color = (255, 0, 0) if result == "x" else (0, 0, 255)
+        self.sign_color = settings_module.O_COLOR if result == "o" else settings_module.X_COLOR
 
         font_size = settings_module.HEIGHT // 15
         self.font = pygame.font.Font(None, font_size)
@@ -117,7 +117,7 @@ class TitleText(TextSprite):
         text = getattr(settings_module, "GAME_TITLE", "Giotto Game")
         font = pygame.font.Font(None, size=settings_module.HEIGHT // 5)
         color = "yellow"
-        pos = (settings_module.WIDTH // 2, settings_module.HEIGHT * 0.4)
+        pos = (settings_module.WIDTH // 2, settings_module.HEIGHT * 0.3)
         super().__init__(text, font, color, pos)
         self.rect.centerx = settings_module.WIDTH // 2
 
@@ -127,7 +127,7 @@ class PressToPlayText(TextSprite):
         text = "Press enter to start a game"
         font = pygame.font.SysFont(None, settings_module.HEIGHT // 20, italic=True)
         color = "white"
-        pos = (settings_module.WIDTH // 2, settings_module.HEIGHT * 0.55)
+        pos = (settings_module.WIDTH // 2, settings_module.HEIGHT * 0.5)
         super().__init__(text, font, color, pos)
         self.rect.centerx = settings_module.WIDTH // 2
 

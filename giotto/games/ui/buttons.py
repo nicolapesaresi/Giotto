@@ -1,12 +1,13 @@
 import pygame
-from giotto.games.ui.player_types import PlayerType, PLAYER_ORDER
+import giotto.games.settings.settings_global as settings_global
+from giotto.games.ui.player_types import PLAYER_ORDER
 
 class Button(pygame.sprite.Sprite):
     def __init__(
         self,
         text: str,
         pos: tuple[int, int],
-        size: tuple[int, int] = (300, 60),
+        size: tuple[int, int] = (settings_global.WIDTH * 0.375, settings_global.HEIGHT * 0.1),
         bg_color=(40, 40, 40),
         text_color=(255, 255, 255),
         settings_module=None,
