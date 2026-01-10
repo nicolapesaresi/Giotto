@@ -14,11 +14,27 @@ from giotto.utils.text_play import initialized_game
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Play an initialized game against an agent')
-    parser.add_argument('-g','--game', help='game to play [tris, connect4]', required=True)
-    parser.add_argument('-p','--player', help='first player [human, random, mcts, minimax]', required=True)
-    parser.add_argument('-o','--opp', help='second player [human, random, mcts, minimax]', required=True)
-    parser.add_argument('-m','--move', help='first move [default random]', required=False)
+    parser = argparse.ArgumentParser(
+        description="Play an initialized game against an agent"
+    )
+    parser.add_argument(
+        "-g", "--game", help="game to play [tris, connect4]", required=True
+    )
+    parser.add_argument(
+        "-p",
+        "--player",
+        help="first player [human, random, mcts, minimax]",
+        required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--opp",
+        help="second player [human, random, mcts, minimax]",
+        required=True,
+    )
+    parser.add_argument(
+        "-m", "--move", help="first move [default random]", required=False
+    )
     args = vars(parser.parse_args())
 
     # game
@@ -37,7 +53,7 @@ if __name__ == "__main__":
 
     # hero
     if args["player"].lower() == "human":
-        player = HumanAgent(name = "Human_opp")
+        player = HumanAgent(name="Human_opp")
     elif args["player"].lower() == "random":
         player = RandomAgent()
     elif args["player"].lower() == "mcts":
@@ -49,7 +65,7 @@ if __name__ == "__main__":
 
     # opponent
     if args["opp"].lower() == "human":
-        opp = HumanAgent(name = "Human_opp")
+        opp = HumanAgent(name="Human_opp")
     elif args["opp"].lower() == "random":
         opp = RandomAgent()
     elif args["opp"].lower() == "mcts":
@@ -58,7 +74,7 @@ if __name__ == "__main__":
         opp = MinimaxAgent()
     else:
         raise ValueError(f"{args["opp"]} not a valid opponent")
-    
+
     agents = [player, opp]
     if agents[0].name == agents[1].name:
         agents[0].name += "_1"

@@ -11,8 +11,10 @@ from giotto.games.connect4 import launch as launch_connect4
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Launch GiottoAI Pygame Desktop')
-    parser.add_argument('-g','--game', help='game to play [launcher, tris, connect4]', required=False)
+    parser = argparse.ArgumentParser(description="Launch GiottoAI Pygame Desktop")
+    parser.add_argument(
+        "-g", "--game", help="game to play [launcher, tris, connect4]", required=False
+    )
     args = vars(parser.parse_args())
 
     # launch game
@@ -22,4 +24,3 @@ if __name__ == "__main__":
         launch_connect4()
     else:
         launch_launcher()
-        

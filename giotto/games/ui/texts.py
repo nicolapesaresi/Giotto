@@ -3,7 +3,10 @@ import pygame
 
 class TextSprite(pygame.sprite.Sprite):
     """Generic text sprite."""
-    def __init__(self, text: str, font: pygame.font.Font, color: tuple, pos: tuple[int, int]):
+
+    def __init__(
+        self, text: str, font: pygame.font.Font, color: tuple, pos: tuple[int, int]
+    ):
         """Instantiates text sprite.
         Args:
             text: text to display.
@@ -28,6 +31,7 @@ class TextSprite(pygame.sprite.Sprite):
 
 class XOSprite(TextSprite):
     """Generic X/O sprite."""
+
     def __init__(self, sign: str, *pos_args, settings_module=None):
         """Instantiates X/O sprite.
         Args:
@@ -46,7 +50,10 @@ class XOSprite(TextSprite):
         elif len(pos_args) == 2:
             # row, col (connect4) - convert to pixel
             row, col = pos_args
-            pos = (settings_module.GRID_X0 + col * settings_module.CELL_WIDTH, settings_module.GRID_Y0 + row * settings_module.CELL_HEIGHT)
+            pos = (
+                settings_module.GRID_X0 + col * settings_module.CELL_WIDTH,
+                settings_module.GRID_Y0 + row * settings_module.CELL_HEIGHT,
+            )
         else:
             raise ValueError("Invalid position args for XOSprite")
 
@@ -57,6 +64,7 @@ class XOSprite(TextSprite):
 
 class TurnSprite(pygame.sprite.Sprite):
     """Sprite to show current turn."""
+
     def __init__(self, sign: str, turn: int, settings_module):
         """Instantiates turn sprite.
         Args:
@@ -68,7 +76,9 @@ class TurnSprite(pygame.sprite.Sprite):
         assert sign in ("o", "x"), "Invalid sign received"
 
         self.text_color = (255, 255, 255)
-        self.sign_color = settings_module.O_COLOR if sign == "o" else settings_module.X_COLOR
+        self.sign_color = (
+            settings_module.O_COLOR if sign == "o" else settings_module.X_COLOR
+        )
 
         font_size = settings_module.HEIGHT // 15
         self.font = pygame.font.Font(None, font_size)
@@ -81,12 +91,16 @@ class TurnSprite(pygame.sprite.Sprite):
         surf_after = self.font.render(after, True, self.text_color)
 
         width = surf_before.get_width() + surf_sign.get_width() + surf_after.get_width()
-        height = max(surf_before.get_height(), surf_sign.get_height(), surf_after.get_height())
+        height = max(
+            surf_before.get_height(), surf_sign.get_height(), surf_after.get_height()
+        )
         self.image = pygame.Surface((width, height), pygame.SRCALPHA)
 
         self.image.blit(surf_before, (0, 0))
         self.image.blit(surf_sign, (surf_before.get_width(), 0))
-        self.image.blit(surf_after, (surf_before.get_width() + surf_sign.get_width(), 0))
+        self.image.blit(
+            surf_after, (surf_before.get_width() + surf_sign.get_width(), 0)
+        )
 
         self.rect = self.image.get_rect()
         self.rect.centerx = settings_module.WIDTH // 2
@@ -95,6 +109,7 @@ class TurnSprite(pygame.sprite.Sprite):
 
 class ResultSprite(pygame.sprite.Sprite):
     """Final result sprite."""
+
     def __init__(self, result: str | int, settings_module):
         """Instantiates result sprite.
         Args:
@@ -105,7 +120,9 @@ class ResultSprite(pygame.sprite.Sprite):
         assert result in ("o", "x", -1), f"Invalid sign received: {result}"
 
         self.text_color = (255, 255, 255)
-        self.sign_color = settings_module.O_COLOR if result == "o" else settings_module.X_COLOR
+        self.sign_color = (
+            settings_module.O_COLOR if result == "o" else settings_module.X_COLOR
+        )
 
         font_size = settings_module.HEIGHT // 15
         self.font = pygame.font.Font(None, font_size)
@@ -120,13 +137,21 @@ class ResultSprite(pygame.sprite.Sprite):
             surf_sign = self.font.render(result.upper(), True, self.sign_color)
             surf_after = self.font.render(after, True, self.text_color)
 
-            width = surf_before.get_width() + surf_sign.get_width() + surf_after.get_width()
-            height = max(surf_before.get_height(), surf_sign.get_height(), surf_after.get_height())
+            width = (
+                surf_before.get_width() + surf_sign.get_width() + surf_after.get_width()
+            )
+            height = max(
+                surf_before.get_height(),
+                surf_sign.get_height(),
+                surf_after.get_height(),
+            )
             self.image = pygame.Surface((width, height), pygame.SRCALPHA)
 
             self.image.blit(surf_before, (0, 0))
             self.image.blit(surf_sign, (surf_before.get_width(), 0))
-            self.image.blit(surf_after, (surf_before.get_width() + surf_sign.get_width(), 0))
+            self.image.blit(
+                surf_after, (surf_before.get_width() + surf_sign.get_width(), 0)
+            )
 
         self.rect = self.image.get_rect()
         self.rect.centerx = settings_module.WIDTH // 2
@@ -135,6 +160,7 @@ class ResultSprite(pygame.sprite.Sprite):
 
 class TitleText(TextSprite):
     """Title text sprite."""
+
     def __init__(self, settings_module):
         """Instantiates title text sprite.
         Args:
@@ -150,6 +176,7 @@ class TitleText(TextSprite):
 
 class PressToPlayText(TextSprite):
     """Text sprite prompting to start the game."""
+
     def __init__(self, settings_module):
         """Instantiates press to play text sprite.
         Args:
@@ -165,6 +192,7 @@ class PressToPlayText(TextSprite):
 
 class PressToGoToMenuText(TextSprite):
     """Text sprite prompting to go back to menu."""
+
     def __init__(self, settings_module):
         """Instantiates press to go to menu text sprite.
         Args:

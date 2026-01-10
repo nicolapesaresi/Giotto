@@ -18,7 +18,7 @@ class GenericGame:
         player_types: dict,
         screen: pygame.Surface | None = None,
         start_at_menu: bool = True,
-        from_launcher: bool = False
+        from_launcher: bool = False,
     ):
         """Instantiates generic pygame renderer.
         Args:
@@ -30,7 +30,7 @@ class GenericGame:
             from_launcher: whether game was started from launcher.
         """
         self.settings = settings_module
-        self.player_types = player_types # supported agents for the game
+        self.player_types = player_types  # supported agents for the game
         self.from_launcher = from_launcher
 
         if screen is None:
@@ -40,9 +40,12 @@ class GenericGame:
         self.fps = self.settings.FPS
 
         self.env = env
-        self.env.reset(1) # X always starts
+        self.env.reset(1)  # X always starts
 
-        self.menu_selections = {"o_player": list(self.player_types.keys())[0], "x_player": list(self.player_types.keys())[0]}
+        self.menu_selections = {
+            "o_player": list(self.player_types.keys())[0],
+            "x_player": list(self.player_types.keys())[0],
+        }
         self.set_agents(self.menu_selections)
 
         self.initial_state = States.MENU if start_at_menu else States.GAME
@@ -52,7 +55,9 @@ class GenericGame:
     def setup_pygame(self):
         """Sets up pygame and screen for desktop mode."""
         pygame.init()
-        self.screen = pygame.display.set_mode((self.settings.WIDTH, self.settings.HEIGHT))
+        self.screen = pygame.display.set_mode(
+            (self.settings.WIDTH, self.settings.HEIGHT)
+        )
         pygame.display.set_caption(self.settings.CAPTION)
 
     def set_agents(self, agents: dict):
@@ -65,7 +70,9 @@ class GenericGame:
     def main_menu(self) -> States:
         """Renders main menu of the game."""
         if not self.menu:
-            self.menu = MainMenu(self.menu_selections, self.settings, self.from_launcher)
+            self.menu = MainMenu(
+                self.menu_selections, self.settings, self.from_launcher
+            )
         self.menu.draw(self.screen)
         outcome = self.menu.handle_events()
         if isinstance(outcome, tuple):
@@ -114,7 +121,9 @@ class GenericGame:
 
                 if action is None and not self.is_human_turn():
                     pygame.time.delay(200)
-                    action = self.agents[self.env.current_player].select_action(self.env)
+                    action = self.agents[self.env.current_player].select_action(
+                        self.env
+                    )
 
                 if action is not None:
                     self.env.step(action)
@@ -130,7 +139,6 @@ class GenericGame:
             self.clock.tick(self.fps)
         if render_state == States.CLOSE:
             self.close()
-
 
     def gameover_screen(self) -> States:
         """Renders game over screen."""
@@ -181,5 +189,3 @@ class GenericGame:
     def check_move_click(self, event):
         """Checks human input for move."""
         raise NotImplementedError()
-
-

@@ -1,8 +1,10 @@
 from giotto.envs.generic import GenericEnv
 
-class GenericAgent():
+
+class GenericAgent:
     """Generic class for game agent."""
-    def __init__(self, name:str):
+
+    def __init__(self, name: str):
         """Instantiates agent."""
         self.name = name
 

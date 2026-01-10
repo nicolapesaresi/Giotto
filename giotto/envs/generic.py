@@ -1,15 +1,16 @@
 import numpy as np
 
+
 class GenericEnv:
     """Generic class for 2 players grid-based game."""
 
-    def __init__(self, signs:list, rows:int, cols:int):
+    def __init__(self, signs: list, rows: int, cols: int):
         """Instantiates environment."""
         self.signs = signs
         self.rows = rows
         self.cols = cols
 
-    def reset(self, starting_player : int|None=None):
+    def reset(self, starting_player: int | None = None):
         """Resets environment to initial state.
         Args:
             starting_player: index of starting player (0=O, 1=X).
@@ -28,8 +29,10 @@ class GenericEnv:
         Args:
             action: index of board cell that will be played by current player. Has to be integer (1-9 for tris, 1-7 for connect4).
         """
-        assert action in self.get_valid_actions(), f"Received invalid action {action, type(action)}, has to be int in {self.get_valid_actions()}"
-        
+        assert (
+            action in self.get_valid_actions()
+        ), f"Received invalid action {action, type(action)}, has to be int in {self.get_valid_actions()}"
+
         # decode action
         action = self.decode_action(action)
 
@@ -42,7 +45,7 @@ class GenericEnv:
         if has_won:
             self.done = True
             self.info["winner"] = self.current_player
-        elif self.turn_counter == self.rows*self.cols:
+        elif self.turn_counter == self.rows * self.cols:
             self.done = True
             self.info["winner"] = -1  # Draw
         else:
@@ -51,7 +54,7 @@ class GenericEnv:
     def get_state(self) -> list[np.ndarray, int]:
         """Returns state of the env."""
         return [self.board, self.current_player]
-    
+
     # -------------
     # game specific methods, to be implemented in the child classes
     # -------------
@@ -71,7 +74,7 @@ class GenericEnv:
         """
         raise NotImplementedError
 
-    def decode_action(self, action: int|tuple[int,int])-> tuple[int,int]:
+    def decode_action(self, action: int | tuple[int, int]) -> tuple[int, int]:
         """Ensures action is encoded as tuple (row, col).
         Args:
             action: action as integer (1-9 tris, 1-7 connect4) or tuple (row, col).

@@ -2,6 +2,7 @@ import math
 from giotto.envs.generic import GenericEnv
 from giotto.agents.generic import GenericAgent
 
+
 class MinimaxAgent(GenericAgent):
     """Minimax-based TicTacToe agent."""
 
@@ -26,7 +27,6 @@ class MinimaxAgent(GenericAgent):
 
         return best_action
 
-
     def _minimax(self, env) -> int:
         if env.done:
             return self._evaluate(env)
@@ -47,7 +47,6 @@ class MinimaxAgent(GenericAgent):
                 sim_env.step(action)
                 best = min(best, self._minimax(sim_env))
             return best
-
 
     def _evaluate(self, env) -> int:
         winner = env.info["winner"]

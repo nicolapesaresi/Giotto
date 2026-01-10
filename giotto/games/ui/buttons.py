@@ -2,13 +2,18 @@ import pygame
 import giotto.games.settings.settings_global as settings_global
 from giotto.games.ui.player_types import PLAYER_ORDER
 
+
 class Button(pygame.sprite.Sprite):
     """Generic button sprite"""
+
     def __init__(
         self,
         text: str,
         pos: tuple[int, int],
-        size: tuple[int, int] = (settings_global.WIDTH * 0.375, settings_global.HEIGHT * 0.1),
+        size: tuple[int, int] = (
+            settings_global.WIDTH * 0.375,
+            settings_global.HEIGHT * 0.1,
+        ),
         bg_color=(40, 40, 40),
         text_color=(255, 255, 255),
         settings_module=None,
@@ -70,7 +75,7 @@ class PlayerSelectButton(Button):
 
     def next_option(self):
         """Cycles to next player type option."""
-        order = getattr(self.settings_module, 'SUPPORTED_PLAYER_TYPES', PLAYER_ORDER)
+        order = getattr(self.settings_module, "SUPPORTED_PLAYER_TYPES", PLAYER_ORDER)
         idx = order.index(self.player_type)
         self.player_type = order[(idx + 1) % len(order)]
         self.set_text(self._label())

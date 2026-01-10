@@ -1,11 +1,13 @@
 import numpy as np
 from giotto.envs.generic import GenericEnv
 
+
 class TrisEnv(GenericEnv):
     """Tic Tac Toe environment."""
+
     def __init__(self):
         """Instantiates environment."""
-        signs = ["o", "x", " "] # third is empty place, accessed with -1
+        signs = ["o", "x", " "]  # third is empty place, accessed with -1
         rows = 3
         cols = 3
         super().__init__(signs, rows, cols)
@@ -19,11 +21,15 @@ class TrisEnv(GenericEnv):
             True if player has won, False otherwise.
         """
         board = self.board
-        assert self.rows == self.cols, "Different number of rows and columns. Not supported."
+        assert (
+            self.rows == self.cols
+        ), "Different number of rows and columns. Not supported."
         for i in range(self.rows):
             if np.all(board[i, :] == player_idx) or np.all(board[:, i] == player_idx):
                 return True
-        if np.all(np.diag(board) == player_idx) or np.all(np.diag(np.fliplr(board)) == player_idx):
+        if np.all(np.diag(board) == player_idx) or np.all(
+            np.diag(np.fliplr(board)) == player_idx
+        ):
             return True
         return False
 
@@ -40,7 +46,7 @@ class TrisEnv(GenericEnv):
                     valid_actions.append(action_int)
         return valid_actions
 
-    def decode_action(self, action: int|tuple[int,int])-> tuple[int,int]:
+    def decode_action(self, action: int | tuple[int, int]) -> tuple[int, int]:
         """Ensures action is encoded as tuple (row, col).
         Args:
             action: action as integer (1-9) or tuple (row, col).
@@ -56,12 +62,18 @@ class TrisEnv(GenericEnv):
         """Prints current board."""
         current_sign = self.signs[self.current_player]
         print(f"-- Turn {self.turn_counter} | {current_sign}'s move --")
-        
-        print(f" {self.signs[self.board[0,0]]} | {self.signs[self.board[0,1]]} | {self.signs[self.board[0,2]]} ")
+
+        print(
+            f" {self.signs[self.board[0,0]]} | {self.signs[self.board[0,1]]} | {self.signs[self.board[0,2]]} "
+        )
         print("---|---|---")
-        print(f" {self.signs[self.board[1,0]]} | {self.signs[self.board[1,1]]} | {self.signs[self.board[1,2]]} ")
+        print(
+            f" {self.signs[self.board[1,0]]} | {self.signs[self.board[1,1]]} | {self.signs[self.board[1,2]]} "
+        )
         print("---|---|---")
-        print(f" {self.signs[self.board[2,0]]} | {self.signs[self.board[2,1]]} | {self.signs[self.board[2,2]]} ")
+        print(
+            f" {self.signs[self.board[2,0]]} | {self.signs[self.board[2,1]]} | {self.signs[self.board[2,2]]} "
+        )
 
     def clone(self):
         """Returns a copy of the env."""
@@ -72,4 +84,3 @@ class TrisEnv(GenericEnv):
         new_env.done = self.done
         new_env.info = self.info.copy()
         return new_env
-    

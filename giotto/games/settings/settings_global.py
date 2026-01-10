@@ -9,4 +9,3 @@ BACKGROUND_COLOR = (30, 30, 30)
 GRID_COLOR = "white"
 O_COLOR = "green"
 X_COLOR = "red"
-

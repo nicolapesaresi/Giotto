@@ -11,11 +11,11 @@ class MCTSNode:
         # Player who made the move leading to this node
         self.player_just_moved = player_just_moved
 
-        self.children = {}              # action -> MCTSNode
+        self.children = {}  # action -> MCTSNode
         self.untried_actions = env.get_valid_actions()
 
         self.total_visits = 0
-        self.total_value = 0.0          # from player_just_moved's perspective
+        self.total_value = 0.0  # from player_just_moved's perspective
 
     @property
     def avg_value(self):
@@ -79,11 +79,7 @@ class MCTS:
             sim_env = env.clone()
 
             # -------- SELECTION --------
-            while (
-                not sim_env.done
-                and node.is_fully_expanded()
-                and node.children
-            ):
+            while not sim_env.done and node.is_fully_expanded() and node.children:
                 action, node = node.best_child(self.cpuct)
                 sim_env.step(action)
 

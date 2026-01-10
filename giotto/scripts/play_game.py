@@ -14,9 +14,16 @@ from giotto.utils.text_play import play_game
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Play one game against an agent')
-    parser.add_argument('-g','--game', help='game to play [tris, connect4]', required=True)
-    parser.add_argument('-o','--opp', help='Opponent to play against [human, random, mcts, minimax]', required=True)
+    parser = argparse.ArgumentParser(description="Play one game against an agent")
+    parser.add_argument(
+        "-g", "--game", help="game to play [tris, connect4]", required=True
+    )
+    parser.add_argument(
+        "-o",
+        "--opp",
+        help="Opponent to play against [human, random, mcts, minimax]",
+        required=True,
+    )
     args = vars(parser.parse_args())
 
     # game
@@ -38,10 +45,10 @@ if __name__ == "__main__":
         opp = MinimaxAgent()
     else:
         raise ValueError(f"{args["opp"]} not a valid opponent")
-    
+
     agents = [HumanAgent(), opp]
     if agents[0].name == agents[1].name:
         agents[0].name += "_1"
         agents[1].name += "_2"
-        
+
     play_game(env, agents, starter=0, render=True)

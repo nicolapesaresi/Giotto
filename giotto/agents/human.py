@@ -1,10 +1,11 @@
-import numpy as np
 from giotto.envs.generic import GenericEnv
 from giotto.agents.generic import GenericAgent
 
+
 class HumanAgent(GenericAgent):
     """Asks human input to move."""
-    def __init__(self, name: str="Human"):
+
+    def __init__(self, name: str = "Human"):
         super().__init__(name)
         self.mode = "text"
 
@@ -17,10 +18,11 @@ class HumanAgent(GenericAgent):
         """
         valid_actions = env.get_valid_actions()
         print(valid_actions)
-        action:int = None
+        action: int = None
         while action not in valid_actions:
             if self.mode == "text":
-                action = int(input(f"Enter next move: [valid actions: {valid_actions}] "))
+                action = int(
+                    input(f"Enter next move: [valid actions: {valid_actions}] ")
+                )
 
         return action
-        

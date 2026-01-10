@@ -7,6 +7,7 @@ from giotto.games.ui.states import States
 
 class MainMenu:
     """Handles main menu screen."""
+
     def __init__(self, selections: dict, settings_module, from_launcher: bool):
         """Instantiates main menu.
         Args:
