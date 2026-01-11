@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 
 
@@ -83,7 +84,7 @@ class GenericEnv:
         """
         raise NotImplementedError
 
-    def clone(self):
+    def clone(self) -> GenericEnv:
         """Returns a copy of the env."""
         raise NotImplementedError
 
