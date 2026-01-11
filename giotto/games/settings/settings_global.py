@@ -1,0 +1,11 @@
+CAPTION = "Giotto AI"
+
+WIDTH = 800
+HEIGHT = 600
+
+FPS = 30
+
+BACKGROUND_COLOR = (30, 30, 30)
+GRID_COLOR = "white"
+O_COLOR = "green"
+X_COLOR = "red"
