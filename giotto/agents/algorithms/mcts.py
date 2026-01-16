@@ -135,7 +135,6 @@ class MCTS:
             root.children.items(),
             key=lambda item: item[1].total_visits,
         )
-        assert root.children[action].avg_value >= 0, "-1"
         return action
 
     def rollout(self, env: GenericEnv, root_player: int):

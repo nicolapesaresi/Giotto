@@ -10,6 +10,7 @@ from giotto.agents.human import HumanAgent
 from giotto.agents.random import RandomAgent
 from giotto.agents.mcts import MCTSAgent
 from giotto.agents.minimax import MinimaxAgent
+from giotto.agents.giotto import GiottoAgent
 from giotto.utils.text_play import play_n_games
 
 
@@ -58,6 +59,8 @@ if __name__ == "__main__":
         player = MCTSAgent()
     elif args["player"].lower() == "minimax":
         player = MinimaxAgent()
+    elif args["player"].lower() == "giotto":
+        player = GiottoAgent(game=args["game"])
     else:
         raise ValueError(f"{args["player"]} not a valid opponent")
 
@@ -70,6 +73,8 @@ if __name__ == "__main__":
         opp = MCTSAgent()
     elif args["opp"].lower() == "minimax":
         opp = MinimaxAgent()
+    elif args["opp"].lower() == "giotto":
+        opp = GiottoAgent(game=args["game"])
     else:
         raise ValueError(f"{args["opp"]} not a valid opponent")
 

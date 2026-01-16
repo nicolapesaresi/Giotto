@@ -39,10 +39,10 @@ class TrisEnv(GenericEnv):
             list of valid actions as integers (1-9).
         """
         valid_actions = []
-        for r in range(3):
-            for c in range(3):
+        for r in range(self.rows):
+            for c in range(self.cols):
                 if self.board[r, c] == -1:
-                    action_int = r * 3 + c + 1  # convert to 1-9
+                    action_int = r * self.cols + c + 1  # convert to 1-9
                     valid_actions.append(action_int)
         return valid_actions
 
