@@ -9,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 from tqdm import tqdm
 from giotto.envs.generic import GenericEnv
-from giotto.agents.mcts import MCTSAgent
 
 
 class ValueNet(nn.Module):
@@ -61,6 +60,8 @@ class ValueNetTrainer:
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-3)
 
     def simulate_game(self, mcts_sims: int):
+        from giotto.agents.mcts import MCTSAgent
+
         new_memory = []
         states = []
 

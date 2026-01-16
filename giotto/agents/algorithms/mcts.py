@@ -1,7 +1,9 @@
 from __future__ import annotations
-from giotto.envs.generic import GenericEnv
 import math
 import random
+import torch
+from giotto.envs.generic import GenericEnv
+from giotto.agents.algorithms.value_net.value_net import ValueNet
 
 
 class MCTSNode:
@@ -76,14 +78,21 @@ class MCTSNode:
 class MCTS:
     """Monte Carlo Tree Search algorithm."""
 
-    def __init__(self, n_simulations: int = 1000, cpuct: float = 1.4):
+    def __init__(
+        self,
+        n_simulations: int = 1000,
+        cpuct: float = 1.4,
+        valuenet: ValueNet | None = None,
+    ):
         """Instantiates MCTS class.
         Args:
             n_simulations: number of simulations to run per move.
             cpuct: exploration constant.
+            value_net: value network for node evaluation. If None, rollouts are used.
         """
         self.n_simulations = n_simulations
         self.cpuct = cpuct
+        self.valuenet = valuenet
 
     def run(self, env: GenericEnv):
         """Runs MCTS to select action."""
@@ -125,7 +134,11 @@ class MCTS:
                 node = child
 
             # SIMULATION
-            result = self.rollout(sim_env, root_player)
+            # if available, use value network, otherwise rollouts
+            if self.valuenet:
+                result = self.valuenet_eval(sim_env, root_player)
+            else:
+                result = self.rollout(sim_env, root_player)
 
             # BACKPROPAGATION
             self.backpropagate(node, result, root_player)
@@ -137,11 +150,8 @@ class MCTS:
         )
         return action
 
-    def rollout(self, env: GenericEnv, root_player: int):
-        """Random playout until terminal state."""
-        while not env.done:
-            env.step(random.choice(env.get_valid_actions()))
-
+    def terminal_node_eval(self, env: GenericEnv, root_player: int):
+        """Evaluates terminal nodes for backpropagation."""
         winner = env.info["winner"]
         if winner == -1:
             return 0
@@ -149,6 +159,33 @@ class MCTS:
             return 1
         else:
             return -1
+
+    def rollout(self, env: GenericEnv, root_player: int):
+        """Random playout until terminal state."""
+        while not env.done:
+            env.step(random.choice(env.get_valid_actions()))
+
+        return self.terminal_node_eval(env, root_player)
+
+    def valuenet_eval(self, env: GenericEnv, root_player: int):
+        """Value network evaluation of current state."""
+        # terminal state check
+        if env.done:
+            return self.terminal_node_eval(env, root_player)
+
+        state = env.get_state()
+        value_input = self.valuenet.process_state(state)
+
+        with torch.no_grad():
+            value = self.valuenet(value_input).item()  # value for current_player
+
+        current_player = env.current_player
+
+        # convert to root player's perspective
+        if current_player == root_player:
+            return value
+        else:
+            return -value
 
     def backpropagate(self, node: MCTSNode, result: int, root_player: int):
         """Backpropagates simulation result up the tree."""
