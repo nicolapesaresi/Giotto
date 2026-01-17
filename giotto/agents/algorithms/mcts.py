@@ -120,7 +120,7 @@ class MCTS:
                 action = random.choice(node.untried_actions)
                 node.untried_actions.remove(action)
 
-                player_just_moved = sim_env.current_player  # putting this after step is wrong because current_player isn't uppdated by env after terminal move
+                player_just_moved = sim_env.current_player  # putting this after step is wrong because current_player isn't updated by env after terminal move
                 sim_env.step(action)
 
                 child = MCTSNode(

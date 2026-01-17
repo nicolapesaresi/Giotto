@@ -1,3 +1,4 @@
+from __future__ import annotations
 import torch
 from pathlib import Path
 from giotto.agents.generic import GenericAgent
@@ -14,18 +15,22 @@ class GiottoAgent(GenericAgent):
         game: str | None = None,
         simulations: int = 1000,
         cpuct: float = 1.4,
+        valuenet: ValueNet | None = None,
     ):
         super().__init__(name)
         # load model
-        if game.lower() == "tris":
-            self.valuenet = ValueNet(3, 3)
-        elif game.lower() == "connect4":
-            self.valuenet = ValueNet(6, 7)
+        if valuenet:
+            self.valuenet = valuenet
         else:
-            raise ValueError(f"Game {game} not supported.")
-        self.load_valuenet(
-            Path(__file__).parent / "models" / game.lower() / "valuenet.pt"
-        )
+            if game.lower() == "tris":
+                self.valuenet = ValueNet(3, 3)
+            elif game.lower() == "connect4":
+                self.valuenet = ValueNet(6, 7)
+            else:
+                raise ValueError(f"Game {game} not supported.")
+            self.load_valuenet(
+                Path(__file__).parent / "models" / game.lower() / "valuenet.pt"
+            )
 
         self.simulations = simulations
         self.cpuct = cpuct
@@ -37,7 +42,9 @@ class GiottoAgent(GenericAgent):
         self.valuenet.eval()
 
     def select_action(self, env):
-        mcts = MCTS(n_simulations=self.simulations, cpuct=self.cpuct)
+        mcts = MCTS(
+            n_simulations=self.simulations, cpuct=self.cpuct, valuenet=self.valuenet
+        )
         action = mcts.run(env)
         return action
 
