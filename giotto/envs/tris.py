@@ -1,5 +1,6 @@
 import numpy as np
 from giotto.envs.generic import GenericEnv
+from giotto.utils.simmetries import EquivalentBoards
 
 
 class TrisEnv(GenericEnv):
@@ -11,6 +12,16 @@ class TrisEnv(GenericEnv):
         rows = 3
         cols = 3
         super().__init__(signs, rows, cols)
+        self.simmetries = EquivalentBoards(
+            rotate90=True,
+            rotate180=True,
+            rotate270=True,
+            reflect_horizontal=True,
+            reflect_vertical=True,
+            reflect_diag_nw_se=True,
+            reflect_diag_ne_sw=True,
+        )
+
         self.reset()
 
     def check_win(self, player_idx: int) -> bool:

@@ -6,11 +6,13 @@ import torch.nn.functional as F
 from datetime import datetime
 from pathlib import Path
 from tqdm import tqdm
+from collections import deque
 from giotto.agents.algorithms.value_net.value_net import ValueNet
 from giotto.envs.generic import GenericEnv
 from giotto.agents.generic import GenericAgent
 from giotto.agents.random import RandomAgent
 from giotto.agents.giotto import GiottoAgent
+from giotto.utils.simmetries import EquivalentBoards
 
 
 class ValueNetTrainer:
@@ -42,7 +44,7 @@ class ValueNetTrainer:
                 result = 0
             else:
                 result = 1 if env_result == state[1] else -1
-            new_memory.append((self.net.process_state(state), result))
+            new_memory.append((state, result))
         return new_memory
 
     def self_play(self, n_games: int, mcts_sims: int):
@@ -56,30 +58,59 @@ class ValueNetTrainer:
             games.extend(new_memory)
         return games
 
-    def train(self, epochs: int, games_per_epoch: int, mcts_sims: int):
+    def augment_games(self, games: list) -> list:
+        if hasattr(self.base_env, "simmetries") and isinstance(
+            self.base_env.simmetries, EquivalentBoards
+        ):
+            augmented = []
+            for state, result in games:
+                board, player_id = state
+                for eq_board in self.base_env.simmetries.get_equivalent_boards(board):
+                    augmented.append(((eq_board, player_id), result))
+            return augmented
+        else:
+            return games
+
+    def train(
+        self,
+        epochs: int,
+        games_per_epoch: int,
+        steps_per_epoch: int,
+        batch_size: int,
+        mcts_sims: int,
+        buffer_length: int,
+    ):
         self.net.train()
         train_losses = []
+        replay_buffer = deque(maxlen=buffer_length)
 
         for epoch in range(epochs):
-            replay_buffer = self.self_play(games_per_epoch, mcts_sims)
-            random.shuffle(replay_buffer)
-            total_loss = 0.0
+            new_games = self.self_play(games_per_epoch, mcts_sims)
+            augmented = self.augment_games(new_games)
+            replay_buffer.extend(augmented)
 
-            for state, result in replay_buffer:
-                pred = self.net(state)
-
-                target = torch.tensor([[result]], dtype=torch.float32)
-                loss = F.mse_loss(pred, target)
+            for step in range(steps_per_epoch):
+                batch = random.sample(
+                    replay_buffer, min(len(replay_buffer), batch_size)
+                )
 
                 self.optimizer.zero_grad()
-                loss.backward()
+                batch_loss = 0.0
+
+                for state, result in batch:
+                    value_input = self.net.process_state(state)
+                    pred = self.net(value_input)
+                    target = torch.tensor([[result]], dtype=torch.float32)
+
+                    loss = F.mse_loss(pred, target)
+                    batch_loss += loss
+
+                batch_loss = batch_loss / len(batch)
+                batch_loss.backward()
                 self.optimizer.step()
 
-                total_loss += loss.item()
-
-            avg_loss = total_loss / len(replay_buffer)
-            train_losses.append(avg_loss)
-            print(f"[Train] Epoch {epoch+1}/{epochs} - MSE: {avg_loss:.4f}")
+                train_losses.append(batch_loss.item())
+            print(f"[Train] Epoch {epoch+1}/{epochs} - MSE: {train_losses[-1]:.4f}")
 
         return train_losses
 
@@ -138,13 +169,29 @@ class ValueNetTrainer:
         self.net.load_state_dict(checkpoint["model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
-    def run(self, epochs: int, n_games: int, mcts_sims: int, log_dir: str):
+    def run(
+        self,
+        epochs: int,
+        steps_per_epoch: int,
+        batch_size: int,
+        n_games: int,
+        mcts_sims: int,
+        buffer_length: int,
+        log_dir: str,
+    ):
         train_games = n_games
         test_games = 100
         games_per_epoch = train_games // epochs
 
         print("Training ...")
-        train_losses = self.train(epochs, games_per_epoch, mcts_sims)
+        train_losses = self.train(
+            epochs,
+            games_per_epoch,
+            steps_per_epoch,
+            batch_size,
+            mcts_sims,
+            buffer_length,
+        )
         self.save_model(os.path.join(log_dir, "valuenet.pt"))
 
         print("Testing ...")
@@ -201,4 +248,16 @@ if __name__ == "__main__":
     os.makedirs(LOGS_DIR)
 
     trainer = ValueNetTrainer(env)
-    trainer.run(epochs=30, n_games=5000, mcts_sims=1000, log_dir=LOGS_DIR)
+    trainer.run(
+        epochs=30,
+        steps_per_epoch=20,
+        batch_size=64,
+        n_games=1000,
+        mcts_sims=500,
+        buffer_length=300,
+        log_dir=LOGS_DIR,
+    )
+
+# TODO:
+# target is mcts value instead of game result
+# batch norm and residual blocks ?

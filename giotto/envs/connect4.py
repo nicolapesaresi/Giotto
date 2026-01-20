@@ -1,5 +1,6 @@
 import numpy as np
 from giotto.envs.generic import GenericEnv
+from giotto.utils.simmetries import EquivalentBoards
 
 
 class Connect4Env(GenericEnv):
@@ -11,6 +12,16 @@ class Connect4Env(GenericEnv):
         rows = 6
         cols = 7
         super().__init__(signs, rows, cols)
+        self.simmetries = EquivalentBoards(
+            rotate90=False,
+            rotate180=False,
+            rotate270=False,
+            reflect_horizontal=False,
+            reflect_vertical=True,
+            reflect_diag_nw_se=False,
+            reflect_diag_ne_sw=False,
+        )
+
         self.reset()
 
     def check_win(self, player_idx: int) -> bool:
