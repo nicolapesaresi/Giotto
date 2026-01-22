@@ -47,33 +47,3 @@ class GiottoAgent(GenericAgent):
         )
         action = mcts.run(env)
         return action
-
-    # def process_state(self, state: list[np.ndarray, int]) -> torch.tensor:
-    #     """Processes env state into value network input."""
-    #     return self.valuenet.process_state(state)
-
-    # def select_action(self, env: GenericEnv) -> int:
-    #     """Randomly selects valid action.
-    #     Args:
-    #         env: environment to extract valid actions from.
-    #     Returns:
-    #         action as integer (1-9 tris, 1-7 connect4).
-    #     """
-    #     valid_actions = env.get_valid_actions()
-    #     evaluations = []
-
-    #     for candidate in valid_actions:
-    #         child_env = env.clone()
-    #         child_env.step(candidate)
-
-    #         value_input = self.process_state(child_env.get_state())
-    #         evaluations.append(self.valuenet(value_input).item())
-
-    #     # minimize opponent's value
-    #     best_value = min(evaluations)
-    #     best_actions = [
-    #         action
-    #         for action, value in zip(valid_actions, evaluations)
-    #         if value == best_value
-    #     ]
-    #     return random.choice(best_actions)

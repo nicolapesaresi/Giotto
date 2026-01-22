@@ -149,11 +149,13 @@ class ValueNetTrainer:
         results = {
             "train_mse": train_losses,
             "test_results": test_results,
-            "config": config,
         }
 
         with open(path, "w") as f:
             json.dump(results, f)
+
+        with open(os.path.dirname(path) + "/config.json", "w") as f:
+            json.dump(config, f)
 
     def save_model(self, path: str):
         torch.save(
@@ -201,12 +203,15 @@ class ValueNetTrainer:
         )
 
         self.save_metrics(
-            path=os.path.join(log_dir, "results_tris.json"),
+            path=os.path.join(log_dir, "results.json"),
             train_losses=train_losses,
             test_results=test_results,
             config={
                 "game": args["game"],
                 "epochs": epochs,
+                "steps_per_epoch": steps_per_epoch,
+                "batch_size": batch_size,
+                "buffer_length": buffer_length,
                 "n_games": n_games,
                 "mcts_sims": mcts_sims,
             },
@@ -248,16 +253,21 @@ if __name__ == "__main__":
     os.makedirs(LOGS_DIR)
 
     trainer = ValueNetTrainer(env)
+    # trainer.run(
+    #     epochs=50,
+    #     steps_per_epoch=50,
+    #     batch_size=128,
+    #     n_games=10000,
+    #     mcts_sims=800,
+    #     buffer_length=6000,
+    #     log_dir=LOGS_DIR,
+    # )
     trainer.run(
         epochs=30,
-        steps_per_epoch=20,
+        steps_per_epoch=30,
         batch_size=64,
-        n_games=1000,
-        mcts_sims=500,
-        buffer_length=300,
+        n_games=3000,
+        mcts_sims=400,
+        buffer_length=1000,
         log_dir=LOGS_DIR,
     )
-
-# TODO:
-# target is mcts value instead of game result
-# batch norm and residual blocks ?
