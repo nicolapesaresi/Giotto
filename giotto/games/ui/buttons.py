@@ -1,6 +1,6 @@
 import pygame
 import giotto.games.settings.settings_global as settings_global
-from giotto.games.ui.player_types import PLAYER_ORDER
+from giotto.games.settings.agent_settings import PLAYER_ORDER
 
 
 class Button(pygame.sprite.Sprite):
