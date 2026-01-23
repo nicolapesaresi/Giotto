@@ -84,10 +84,10 @@ class PygameLauncher:
         pygame.quit()
 
 
-# # -----------
-# def launch():
-#     PygameLauncher().run()
+# -----------
+def launch():
+    PygameLauncher().run()
 
 
-# if __name__ == "__main__":
-#     launch()
+if __name__ == "__main__":
+    launch()

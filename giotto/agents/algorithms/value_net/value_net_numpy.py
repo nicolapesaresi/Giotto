@@ -58,10 +58,15 @@ class ValueNetNumpy:
 
     def load_numpy_weights(self, path):
         data = np.load(path)
-        self.conv1_w, self.conv1_b = data["conv1_weight"], data["conv1_bias"]
-        self.conv2_w, self.conv2_b = data["conv2_weight"], data["conv2_bias"]
-        self.fc1_w, self.fc1_b = data["fc1_weight"], data["fc1_bias"]
-        self.fc2_w, self.fc2_b = data["fc2_weight"], data["fc2_bias"]
+        print(data)
+        self.conv1_w, self.conv1_b = data["conv1.weight"], data["conv1.bias"]
+        self.conv2_w, self.conv2_b = data["conv2.weight"], data["conv2.bias"]
+        self.fc1_w, self.fc1_b = data["fc1.weight"], data["fc1.bias"]
+        self.fc2_w, self.fc2_b = data["fc2.weight"], data["fc2.bias"]
+
+    def __call__(self, x: np.ndarray):
+        """EXACT nn.Module behavior: model(x) → forward(x)"""
+        return self.forward(x)
 
     def eval(self):
         pass  # NumPy always eval
