@@ -1,9 +1,18 @@
 from __future__ import annotations
 import math
 import random
-import torch
 from giotto.envs.generic import GenericEnv
-from giotto.agents.algorithms.value_net.value_net import ValueNet
+
+# try except block to make it work in browser mode
+try:
+    BROWSER_MODE = False
+    import torch
+    from giotto.agents.algorithms.value_net.value_net import ValueNet
+except ImportError:
+    BROWSER_MODE = True
+    from giotto.agents.algorithms.value_net.value_net_numpy import (
+        ValueNetNumpy as ValueNet,
+    )
 
 
 class MCTSNode:

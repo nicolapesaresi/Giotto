@@ -19,18 +19,18 @@ class PygameLauncher:
             self.screen = screen
 
         # title and prompt fonts
-        self.title_font = pygame.font.Font(None, settings.HEIGHT // 6)
+        self.title_font = pygame.font.Font(None, settings.HEIGHT // 5)
         self.prompt_font = pygame.font.Font(None, settings.HEIGHT // 20)
 
         # buttons
         cx = settings.WIDTH // 2
         self.tictactoe_btn = Button(
             "Tic Tac Toe",
-            pos=(cx, int(settings.HEIGHT * 0.55)),
+            pos=(cx, int(settings.HEIGHT * 0.7)),
             settings_module=settings,
         )
         self.connect4_btn = Button(
-            "Connect4", pos=(cx, int(settings.HEIGHT * 0.67)), settings_module=settings
+            "Connect4", pos=(cx, int(settings.HEIGHT * 0.82)), settings_module=settings
         )
         self.buttons = [self.tictactoe_btn, self.connect4_btn]
 
@@ -46,13 +46,13 @@ class PygameLauncher:
 
         title_surf = self.title_font.render("Giotto AI", True, "yellow")
         title_rect = title_surf.get_rect(
-            center=(settings.WIDTH // 2, int(settings.HEIGHT * 0.25))
+            center=(settings.WIDTH // 2, int(settings.HEIGHT * 0.4))
         )
         self.screen.blit(title_surf, title_rect)
 
         prompt_surf = self.prompt_font.render("Select game:", True, (255, 255, 255))
         prompt_rect = prompt_surf.get_rect(
-            center=(settings.WIDTH // 2, int(settings.HEIGHT * 0.42))
+            center=(settings.WIDTH // 2, int(settings.HEIGHT * 0.51))
         )
         self.screen.blit(prompt_surf, prompt_rect)
 
@@ -84,10 +84,10 @@ class PygameLauncher:
         pygame.quit()
 
 
-# -----------
-def launch():
-    PygameLauncher().run()
+# # -----------
+# def launch():
+#     PygameLauncher().run()
 
 
-if __name__ == "__main__":
-    launch()
+# if __name__ == "__main__":
+#     launch()

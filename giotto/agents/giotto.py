@@ -1,9 +1,18 @@
 from __future__ import annotations
-import torch
 from pathlib import Path
 from giotto.agents.generic import GenericAgent
 from giotto.agents.algorithms.mcts import MCTS
-from giotto.agents.algorithms.value_net.value_net import ValueNet
+
+# try except block to make it work in browser mode
+try:
+    BROWSER_MODE = False
+    import torch
+    from giotto.agents.algorithms.value_net.value_net import ValueNet
+except ImportError:
+    BROWSER_MODE = True
+    from giotto.agents.algorithms.value_net.value_net_numpy import (
+        ValueNetNumpy as ValueNet,
+    )
 
 
 class GiottoAgent(GenericAgent):
@@ -28,9 +37,14 @@ class GiottoAgent(GenericAgent):
                 self.valuenet = ValueNet(6, 7)
             else:
                 raise ValueError(f"Game {game} not supported.")
-            self.load_valuenet(
-                Path(__file__).parent / "models" / game.lower() / "valuenet.pt"
-            )
+            if not BROWSER_MODE:
+                self.load_valuenet(
+                    Path(__file__).parent / "models" / game.lower() / "valuenet.pt"
+                )
+            else:
+                self.load_valuenet_numpy(
+                    Path(__file__).parent / "models" / game.lower() / "valuenet.npz"
+                )
 
         self.simulations = simulations
         self.cpuct = cpuct
@@ -40,6 +54,10 @@ class GiottoAgent(GenericAgent):
         checkpoint = torch.load(path, map_location="cpu")
         self.valuenet.load_state_dict(checkpoint["model_state_dict"])
         self.valuenet.eval()
+
+    def load_valuenet_numpy(self, path: str):
+        """Loads value network model as numpy version for browser mode."""
+        self.valuenet.load_numpy_weights(path)
 
     def select_action(self, env):
         mcts = MCTS(
