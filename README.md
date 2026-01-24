@@ -6,8 +6,7 @@ This repository contains the env implementation of the two player grid based gam
 
 [PLAY IN BROWSER](https://nicolapesaresi.github.io/Giotto/)
 
-<img src="giotto/assets/tris_example.png" width="45%" alt="Tris example">
-<img src="giotto/assets/connect4_example.png" width="45%" alt="Connect4 example">
+<img src="giotto/assets/tris_example.png" width="45%" alt="Tris example"> <img src="giotto/assets/connect4_example.png" width="45%" alt="Connect4 example">
 
 ## Games
 Currently implemented games are:
