@@ -32,33 +32,54 @@ class ValueNetNumpy:
     def _conv2d(self, x, w, b, padding=1, stride=1):
         """PyTorch nn.Conv2d replica."""
         batch, cin, hin, win = x.shape
-        cout, cink, kh, kw = w.shape
-        hout, wout = hin, win  # padding=1 preserves
+        cout, cin_w, kh, kw = w.shape
+        assert cin == cin_w
 
-        out = np.zeros((batch, cout, hout, wout), dtype=np.float32)
+        # Output spatial size (padding=1, stride=1 preserves size)
+        hout = (hin + 2 * padding - kh) // stride + 1
+        wout = (win + 2 * padding - kw) // stride + 1
 
-        for b_i in range(batch):
-            for cout_i in range(cout):
-                for i in range(hout):
-                    for j in range(wout):
-                        conv_sum = 0.0
-                        for cin_i in range(cin):
-                            for di in range(kh):
-                                for dj in range(kw):
-                                    ii = i + di - padding
-                                    jj = j + dj - padding
-                                    if 0 <= ii < hin and 0 <= jj < win:
-                                        conv_sum += (
-                                            x[b_i, cin_i, ii, jj]
-                                            * w[cout_i, cin_i, di, dj]
-                                        )
-                        out[b_i, cout_i, i, j] = conv_sum + b[cout_i]
+        # Pad input
+        x_pad = np.pad(
+            x,
+            ((0, 0), (0, 0), (padding, padding), (padding, padding)),
+            mode="constant",
+        )
 
-        return out
+        # ---- im2col ----
+        # Shape: (batch, cin, kh, kw, hout, wout)
+        cols = np.zeros((batch, cin, kh, kw, hout, wout), dtype=x.dtype)
+
+        for di in range(kh):
+            for dj in range(kw):
+                cols[:, :, di, dj, :, :] = x_pad[
+                    :,
+                    :,
+                    di : di + stride * hout : stride,
+                    dj : dj + stride * wout : stride,
+                ]
+
+        # Reshape for GEMM
+        # (batch * hout * wout, cin * kh * kw)
+        cols = cols.transpose(0, 4, 5, 1, 2, 3).reshape(batch * hout * wout, -1)
+
+        # Flatten filters
+        # (cout, cin * kh * kw)
+        w_col = w.reshape(cout, -1)
+
+        # Matrix multiply
+        out = cols @ w_col.T  # (batch*hout*wout, cout)
+
+        # Add bias
+        out += b
+
+        # Reshape back to NCHW
+        out = out.reshape(batch, hout, wout, cout).transpose(0, 3, 1, 2)
+
+        return out.astype(np.float32)
 
     def load_numpy_weights(self, path):
         data = np.load(path)
-        print(data)
         self.conv1_w, self.conv1_b = data["conv1.weight"], data["conv1.bias"]
         self.conv2_w, self.conv2_b = data["conv2.weight"], data["conv2.bias"]
         self.fc1_w, self.fc1_b = data["fc1.weight"], data["fc1.bias"]
