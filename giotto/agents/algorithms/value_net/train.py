@@ -5,6 +5,7 @@ from collections import deque
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
@@ -157,7 +158,7 @@ class ValueNetTrainer:
             json.dump(config, f)
 
     def save_model(self, path: str):
-        """Save the model and optimizer state to a file."""
+        """Save the model and optimizer state to a file. Also exports NumPy .npz for pygbag."""
         torch.save(
             {
                 "model_state_dict": self.net.state_dict(),
@@ -165,6 +166,10 @@ class ValueNetTrainer:
             },
             path,
         )
+        npz_path = path.replace(".pt", ".npz")
+        state_dict = self.net.state_dict()
+        npz_data = {k: v.cpu().detach().numpy() for k, v in state_dict.items()}
+        np.savez_compressed(npz_path, **npz_data)
 
     def load_model(self, path: str):
         """Load the model and optimizer state from a file."""
@@ -261,11 +266,11 @@ if __name__ == "__main__":
     #     log_dir=LOGS_DIR,
     # )
     trainer.run(
-        epochs=30,
+        epochs=1,
         steps_per_epoch=30,
-        batch_size=64,
-        n_games=3000,
-        mcts_sims=400,
+        batch_size=1,
+        n_games=10,
+        mcts_sims=1,
         buffer_length=1000,
         log_dir=LOGS_DIR,
     )
