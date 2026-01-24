@@ -1,14 +1,17 @@
 """Default agent settings when launching pygame."""
 
 from enum import Enum
-from giotto.agents.human import HumanAgent
-from giotto.agents.random import RandomAgent
-from giotto.agents.minimax import MinimaxAgent
-from giotto.agents.mcts import MCTSAgent
+
 from giotto.agents.giotto import GiottoAgent
+from giotto.agents.human import HumanAgent
+from giotto.agents.mcts import MCTSAgent
+from giotto.agents.minimax import MinimaxAgent
+from giotto.agents.random import RandomAgent
 
 
 class PlayerType(Enum):
+    """Types of players/agents available."""
+
     HUMAN = "Human"
     RANDOM = "Random"
     MINIMAX = "Minimax"

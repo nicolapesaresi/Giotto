@@ -1,4 +1,5 @@
 import numpy as np
+
 from giotto.envs.generic import GenericEnv
 from giotto.utils.simmetries import EquivalentBoards
 
@@ -26,19 +27,19 @@ class TrisEnv(GenericEnv):
 
     def check_win(self, player_idx: int) -> bool:
         """Checks if player has won.
+
         Args:
             player_idx: index of the player to check for a win.
+
         Returns:
             True if player has won, False otherwise.
         """
         board = self.board
-        assert (
-            self.rows == self.cols
-        ), "Different number of rows and columns. Not supported."
+        assert self.rows == self.cols, "Different number of rows and columns. Not supported."
         for i in range(self.rows):
             if np.all(board[i, :] == player_idx) or np.all(board[:, i] == player_idx):
                 return True
-        if np.all(np.diag(board) == player_idx) or np.all(
+        if np.all(np.diag(board) == player_idx) or np.all(  # noqa: SIM103
             np.diag(np.fliplr(board)) == player_idx
         ):
             return True
@@ -46,6 +47,7 @@ class TrisEnv(GenericEnv):
 
     def get_valid_actions(self) -> list[int]:
         """Extracts valid actions from env.
+
         Returns:
             list of valid actions as integers (1-9).
         """
@@ -59,8 +61,10 @@ class TrisEnv(GenericEnv):
 
     def decode_action(self, action: int | tuple[int, int]) -> tuple[int, int]:
         """Ensures action is encoded as tuple (row, col).
+
         Args:
             action: action as integer (1-9) or tuple (row, col).
+
         Returns:
             action as tuple (row, col).
         """
@@ -74,17 +78,11 @@ class TrisEnv(GenericEnv):
         current_sign = self.signs[self.current_player]
         print(f"-- Turn {self.turn_counter} | {current_sign}'s move --")
 
-        print(
-            f" {self.signs[self.board[0,0]]} | {self.signs[self.board[0,1]]} | {self.signs[self.board[0,2]]} "
-        )
+        print(f" {self.signs[self.board[0,0]]} | {self.signs[self.board[0,1]]} | {self.signs[self.board[0,2]]} ")
         print("---|---|---")
-        print(
-            f" {self.signs[self.board[1,0]]} | {self.signs[self.board[1,1]]} | {self.signs[self.board[1,2]]} "
-        )
+        print(f" {self.signs[self.board[1,0]]} | {self.signs[self.board[1,1]]} | {self.signs[self.board[1,2]]} ")
         print("---|---|---")
-        print(
-            f" {self.signs[self.board[2,0]]} | {self.signs[self.board[2,1]]} | {self.signs[self.board[2,2]]} "
-        )
+        print(f" {self.signs[self.board[2,0]]} | {self.signs[self.board[2,1]]} | {self.signs[self.board[2,2]]} ")
 
     def clone(self):
         """Returns a copy of the env."""

@@ -2,19 +2,17 @@
 python ./giotto/scripts/run_pygame.py # runs launcher
 python ./giotto/scripts/run_pygame.py -g tris # runs TicTacToe
 python ./giotto/scripts/run_pygame.py -g connect4 # runs Connect4
-"""
+"""  # noqa: D415
 
 import argparse
+
+from giotto.games.connect4 import launch as launch_connect4
 from giotto.games.launcher import launch as launch_launcher
 from giotto.games.tris import launch as launch_tris
-from giotto.games.connect4 import launch as launch_connect4
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Launch GiottoAI Pygame Desktop")
-    parser.add_argument(
-        "-g", "--game", help="game to play [launcher, tris, connect4]", required=False
-    )
+    parser.add_argument("-g", "--game", help="game to play [launcher, tris, connect4]", required=False)
     args = vars(parser.parse_args())
 
     # launch game

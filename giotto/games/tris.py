@@ -1,10 +1,11 @@
 import pygame
 from pygame.sprite import Group
+
 import giotto.games.settings.settings_tris as settings
-from giotto.games.settings.agent_settings import AGENT_CLASS_MAP
 from giotto.envs.tris import TrisEnv
-from giotto.games.ui.texts import XOSprite, TurnSprite
 from giotto.games.generic import GenericGame
+from giotto.games.settings.agent_settings import AGENT_CLASS_MAP
+from giotto.games.ui.texts import TurnSprite, XOSprite
 
 
 class PygameTris(GenericGame):
@@ -17,68 +18,38 @@ class PygameTris(GenericGame):
         from_launcher: bool = False,
     ):
         """Instantiates pygame renderer for TicTacToe.
+
         Args:
             screen: None for desktop mode, pygame screen for browser.
             start_at_menu: whether pygame starts form main menu or runs directly.
             from_launcher: whether game was started from launcher.
         """
         env = TrisEnv()
-        player_types = {
-            pt: AGENT_CLASS_MAP[pt] for pt in settings.SUPPORTED_PLAYER_TYPES
-        }
-        super().__init__(
-            env, settings, player_types, screen, start_at_menu, from_launcher
-        )
+        player_types = {pt: AGENT_CLASS_MAP[pt] for pt in settings.SUPPORTED_PLAYER_TYPES}
+        super().__init__(env, settings, player_types, screen, start_at_menu, from_launcher)
 
     def check_move_click(self, event) -> int | None:
         """Checks human input for move."""
         if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
             cell = None
-            if (
-                settings.GRID_X0 < x < settings.GRID_X1
-                and settings.GRID_Y0 < y < settings.GRID_Y1
-            ):
+            if settings.GRID_X0 < x < settings.GRID_X1 and settings.GRID_Y0 < y < settings.GRID_Y1:
                 cell = 1
-            elif (
-                settings.GRID_X1 < x < settings.GRID_X2
-                and settings.GRID_Y0 < y < settings.GRID_Y1
-            ):
+            elif settings.GRID_X1 < x < settings.GRID_X2 and settings.GRID_Y0 < y < settings.GRID_Y1:
                 cell = 2
-            elif (
-                settings.GRID_X2 < x < settings.GRID_X3
-                and settings.GRID_Y0 < y < settings.GRID_Y1
-            ):
+            elif settings.GRID_X2 < x < settings.GRID_X3 and settings.GRID_Y0 < y < settings.GRID_Y1:
                 cell = 3
-            elif (
-                settings.GRID_X0 < x < settings.GRID_X1
-                and settings.GRID_Y1 < y < settings.GRID_Y2
-            ):
+            elif settings.GRID_X0 < x < settings.GRID_X1 and settings.GRID_Y1 < y < settings.GRID_Y2:
                 cell = 4
-            elif (
-                settings.GRID_X1 < x < settings.GRID_X2
-                and settings.GRID_Y1 < y < settings.GRID_Y2
-            ):
+            elif settings.GRID_X1 < x < settings.GRID_X2 and settings.GRID_Y1 < y < settings.GRID_Y2:
                 cell = 5
-            elif (
-                settings.GRID_X2 < x < settings.GRID_X3
-                and settings.GRID_Y1 < y < settings.GRID_Y2
-            ):
+            elif settings.GRID_X2 < x < settings.GRID_X3 and settings.GRID_Y1 < y < settings.GRID_Y2:
                 cell = 6
-            elif (
-                settings.GRID_X0 < x < settings.GRID_X1
-                and settings.GRID_Y2 < y < settings.GRID_Y3
-            ):
+            elif settings.GRID_X0 < x < settings.GRID_X1 and settings.GRID_Y2 < y < settings.GRID_Y3:
                 cell = 7
-            elif (
-                settings.GRID_X1 < x < settings.GRID_X2
-                and settings.GRID_Y2 < y < settings.GRID_Y3
-            ):
+            elif settings.GRID_X1 < x < settings.GRID_X2 and settings.GRID_Y2 < y < settings.GRID_Y3:
                 cell = 8
-            elif (
-                settings.GRID_X2 < x < settings.GRID_X3
-                and settings.GRID_Y2 < y < settings.GRID_Y3
-            ):
+            elif settings.GRID_X2 < x < settings.GRID_X3 and settings.GRID_Y2 < y < settings.GRID_Y3:
                 cell = 9
             if cell is not None and cell in self.env.get_valid_actions():
                 return cell
@@ -140,6 +111,7 @@ class PygameTris(GenericGame):
 
 # -----------
 def launch():
+    """Directly launches Tris game."""
     PygameTris().run()
 
 

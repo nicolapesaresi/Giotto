@@ -1,4 +1,5 @@
 import numpy as np
+
 from giotto.envs.generic import GenericEnv
 from giotto.utils.simmetries import EquivalentBoards
 
@@ -25,6 +26,7 @@ class Connect4Env(GenericEnv):
         self.reset()
 
     def check_win(self, player_idx: int) -> bool:
+        """Checks if the given player has won."""
         board = self.board
         # horizontal
         for r in range(self.rows):
@@ -50,6 +52,7 @@ class Connect4Env(GenericEnv):
 
     def get_valid_actions(self) -> list[int]:
         """Extracts valid actions from env.
+
         Returns:
             list of valid actions as integers (1-7).
         """
@@ -62,17 +65,17 @@ class Connect4Env(GenericEnv):
 
     def decode_action(self, action: int | tuple[int, int]) -> tuple[int, int]:
         """Ensures action is encoded as tuple (row, col).
+
         Args:
             action: action as integer (1-7) or tuple (row, col).
+
         Returns:
             action as tuple (row, col).
         """
         if isinstance(action, int):
             action_col = action - 1  # convert to 0-6
             col_values = [row[action_col] for row in self.board]
-            action_row = next(
-                (i for i, val in enumerate(col_values) if val == -1), None
-            )
+            action_row = next((i for i, val in enumerate(col_values) if val == -1), None)
             if action_row is None:
                 raise ValueError("Column already full.")
             action = (action_row, action_col)

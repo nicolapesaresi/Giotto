@@ -24,8 +24,10 @@ class EquivalentBoards:
 
     def get_equivalent_boards(self, board: np.ndarray) -> list[np.ndarray]:
         """Generates all unique equivalent boards applying the specified symmetries.
+
         Args:
             board: original board as numpy array.
+
         Returns:
             list of equivalent boards as numpy arrays.
         """
@@ -54,32 +56,40 @@ class EquivalentBoards:
 
 
 def identity(board):
+    """Returns the board unchanged."""
     return board.copy()
 
 
 def rotate90(board):  # Clockwise 90°
+    """Rotates the board 90 degrees clockwise."""
     return np.rot90(board, k=-1)
 
 
 def rotate180(board):
+    """Rotates the board 180 degrees."""
     return np.rot90(board, k=-2)
 
 
 def rotate270(board):
+    """Rotates the board 270 degrees clockwise."""
     return np.rot90(board, k=-3)
 
 
-def reflect_horizontal(board):  # Flip up-down
+def reflect_horizontal(board):
+    """Flips the board upside-down."""
     return np.flipud(board)
 
 
-def reflect_vertical(board):  # Flip left-right
+def reflect_vertical(board):
+    """Flips the board left-right."""
     return np.fliplr(board)
 
 
-def reflect_diag_nw_se(board):  # Main diagonal (top-left to bottom-right)
+def reflect_diag_nw_se(board):
+    """Reflects the board along the main diagonal (top-left to bottom-right)."""
     return np.transpose(board)
 
 
-def reflect_diag_ne_sw(board):  # Anti-diagonal
+def reflect_diag_ne_sw(board):
+    """Reflects the board along the anti-diagonal (top-right to bottom-left)."""
     return np.fliplr(np.flipud(np.transpose(board)))

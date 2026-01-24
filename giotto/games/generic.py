@@ -1,11 +1,13 @@
-import pygame
 import sys
 from types import ModuleType
-from giotto.games.ui.states import States
-from giotto.envs.generic import GenericEnv
-from giotto.games.ui.main_menu import MainMenu
-from giotto.games.ui.gameover_screen import GameOver
+
+import pygame
+
 from giotto.agents.human import HumanAgent
+from giotto.envs.generic import GenericEnv
+from giotto.games.ui.gameover_screen import GameOver
+from giotto.games.ui.main_menu import MainMenu
+from giotto.games.ui.states import States
 
 
 class GenericGame:
@@ -21,6 +23,7 @@ class GenericGame:
         from_launcher: bool = False,
     ):
         """Instantiates generic pygame renderer.
+
         Args:
             env: environment for the chosen game.
             settings_module: settings configuration for the chosen game.
@@ -55,9 +58,7 @@ class GenericGame:
     def setup_pygame(self):
         """Sets up pygame and screen for desktop mode."""
         pygame.init()
-        self.screen = pygame.display.set_mode(
-            (self.settings.WIDTH, self.settings.HEIGHT)
-        )
+        self.screen = pygame.display.set_mode((self.settings.WIDTH, self.settings.HEIGHT))
         pygame.display.set_caption(self.settings.CAPTION)
 
     def set_agents(self, agents: dict):
@@ -70,9 +71,7 @@ class GenericGame:
     def main_menu(self) -> States:
         """Renders main menu of the game."""
         if not self.menu:
-            self.menu = MainMenu(
-                self.menu_selections, self.settings, self.from_launcher
-            )
+            self.menu = MainMenu(self.menu_selections, self.settings, self.from_launcher)
         self.menu.draw(self.screen)
         outcome = self.menu.handle_events()
         if isinstance(outcome, tuple):
@@ -121,9 +120,7 @@ class GenericGame:
 
                 if action is None and not self.is_human_turn():
                     pygame.time.delay(200)
-                    action = self.agents[self.env.current_player].select_action(
-                        self.env
-                    )
+                    action = self.agents[self.env.current_player].select_action(self.env)
 
                 if action is not None:
                     self.env.step(action)
@@ -144,7 +141,7 @@ class GenericGame:
         """Renders game over screen."""
         if not self.gameover:
             winner = self.env.info.get("winner")
-            if winner == -1:
+            if winner == -1:  # noqa: SIM114
                 result = -1
             elif winner is None:
                 result = -1

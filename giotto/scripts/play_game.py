@@ -1,24 +1,22 @@
 """Play a game against an agent.
 Example command:
 python ./giotto/scripts/play_game.py -g connect4 -o random
-"""
+"""  # noqa: D415
 
 import argparse
-from giotto.envs.tris import TrisEnv
-from giotto.envs.connect4 import Connect4Env
+
+from giotto.agents.giotto import GiottoAgent
 from giotto.agents.human import HumanAgent
-from giotto.agents.random import RandomAgent
 from giotto.agents.mcts import MCTSAgent
 from giotto.agents.minimax import MinimaxAgent
-from giotto.agents.giotto import GiottoAgent
+from giotto.agents.random import RandomAgent
+from giotto.envs.connect4 import Connect4Env
+from giotto.envs.tris import TrisEnv
 from giotto.utils.text_play import play_game
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Play one game against an agent")
-    parser.add_argument(
-        "-g", "--game", help="game to play [tris, connect4]", required=True
-    )
+    parser.add_argument("-g", "--game", help="game to play [tris, connect4]", required=True)
     parser.add_argument(
         "-o",
         "--opp",
@@ -33,7 +31,7 @@ if __name__ == "__main__":
     elif args["game"].lower() == "connect4":
         env = Connect4Env()
     else:
-        raise ValueError(f"{args["game"]} not a valid game")
+        raise ValueError(f"{args['game']} not a valid game")
 
     # opponent
     if args["opp"].lower() == "human":
@@ -47,7 +45,7 @@ if __name__ == "__main__":
     elif args["opp"].lower() == "giotto":
         opp = GiottoAgent(simulations=100, game=args["game"])
     else:
-        raise ValueError(f"{args["opp"]} not a valid opponent")
+        raise ValueError(f"{args['opp']} not a valid opponent")
 
     agents = [HumanAgent(), opp]
     if agents[0].name == agents[1].name:
