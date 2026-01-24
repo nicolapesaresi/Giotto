@@ -193,9 +193,11 @@ class MCTS:
         state = env.get_state()
         value_input = self.valuenet.process_state(state)
 
-        with torch.no_grad():
-            value = self.valuenet(value_input).item()  # value for current_player
-
+        if not BROWSER_MODE:
+            with torch.no_grad():
+                value = self.valuenet(value_input).item()  # value for current_player
+        else:
+            value = self.valuenet(value_input)
         current_player = env.current_player
 
         # convert to root player's perspective
