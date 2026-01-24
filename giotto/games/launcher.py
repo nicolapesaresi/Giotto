@@ -1,7 +1,8 @@
 import pygame
+
 import giotto.games.settings.settings_global as settings
-from giotto.games.tris import PygameTris
 from giotto.games.connect4 import PygameConnect4
+from giotto.games.tris import PygameTris
 from giotto.games.ui.buttons import Button
 
 
@@ -10,6 +11,7 @@ class PygameLauncher:
 
     def __init__(self, screen: pygame.Surface | None = None):
         """Instantiates launcher.
+
         Args:
             screen: None for desktop mode, pygame screen for browser.
         """
@@ -29,9 +31,7 @@ class PygameLauncher:
             pos=(cx, int(settings.HEIGHT * 0.7)),
             settings_module=settings,
         )
-        self.connect4_btn = Button(
-            "Connect4", pos=(cx, int(settings.HEIGHT * 0.82)), settings_module=settings
-        )
+        self.connect4_btn = Button("Connect4", pos=(cx, int(settings.HEIGHT * 0.82)), settings_module=settings)
         self.buttons = [self.tictactoe_btn, self.connect4_btn]
 
     def setup_pygame(self):
@@ -45,15 +45,11 @@ class PygameLauncher:
         self.screen.fill(settings.BACKGROUND_COLOR)
 
         title_surf = self.title_font.render("Giotto AI", True, "yellow")
-        title_rect = title_surf.get_rect(
-            center=(settings.WIDTH // 2, int(settings.HEIGHT * 0.4))
-        )
+        title_rect = title_surf.get_rect(center=(settings.WIDTH // 2, int(settings.HEIGHT * 0.4)))
         self.screen.blit(title_surf, title_rect)
 
         prompt_surf = self.prompt_font.render("Select game:", True, (255, 255, 255))
-        prompt_rect = prompt_surf.get_rect(
-            center=(settings.WIDTH // 2, int(settings.HEIGHT * 0.51))
-        )
+        prompt_rect = prompt_surf.get_rect(center=(settings.WIDTH // 2, int(settings.HEIGHT * 0.51)))
         self.screen.blit(prompt_surf, prompt_rect)
 
         for btn in self.buttons:
@@ -70,14 +66,10 @@ class PygameLauncher:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     pos = event.pos
                     if self.tictactoe_btn.clicked(pos):
-                        game = PygameTris(
-                            screen=self.screen, start_at_menu=True, from_launcher=True
-                        )
+                        game = PygameTris(screen=self.screen, start_at_menu=True, from_launcher=True)
                         game.run()
                     elif self.connect4_btn.clicked(pos):
-                        game = PygameConnect4(
-                            screen=self.screen, start_at_menu=True, from_launcher=True
-                        )
+                        game = PygameConnect4(screen=self.screen, start_at_menu=True, from_launcher=True)
                         game.run()
             self.draw()
             pygame.display.flip()
@@ -86,6 +78,7 @@ class PygameLauncher:
 
 # -----------
 def launch():
+    """Directly launches the launcher menu."""
     PygameLauncher().run()
 
 

@@ -1,8 +1,9 @@
 import pygame
 from pygame.sprite import Group
-from giotto.games.ui.texts import TitleText, PressToPlayText
-from giotto.games.ui.buttons import PlayerSelectButton, Button
+
+from giotto.games.ui.buttons import Button, PlayerSelectButton
 from giotto.games.ui.states import States
+from giotto.games.ui.texts import PressToPlayText, TitleText
 
 
 class MainMenu:
@@ -10,6 +11,7 @@ class MainMenu:
 
     def __init__(self, selections: dict, settings_module, from_launcher: bool):
         """Instantiates main menu.
+
         Args:
             selections: initial player type selections.
             settings_module: settings configuration for the chosen game.

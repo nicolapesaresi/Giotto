@@ -1,4 +1,4 @@
-import giotto.games.settings.settings_global as settings_global
+from giotto.games.settings import settings_global
 from giotto.games.settings.agent_settings import PlayerType
 
 GAME_TITLE = "Giotto TicTacToe"

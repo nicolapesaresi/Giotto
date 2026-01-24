@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import numpy as np
 
 
@@ -13,6 +14,7 @@ class GenericEnv:
 
     def reset(self, starting_player: int | None = None):
         """Resets environment to initial state.
+
         Args:
             starting_player: index of starting player (0=O, 1=X).
         """
@@ -27,8 +29,10 @@ class GenericEnv:
 
     def step(self, action: int):
         """Updates environment after an action has been taken.
+
         Args:
-            action: index of board cell that will be played by current player. Has to be integer (1-9 for tris, 1-7 for connect4).
+            action: index of board cell that will be played by current player.
+                Has to be integer (1-9 for tris, 1-7 for connect4).
         """
         assert (
             action in self.get_valid_actions()
@@ -61,8 +65,10 @@ class GenericEnv:
     # -------------
     def check_win(self, player_idx: int) -> bool:
         """Checks if player has won. Implemented in child env for the specific game.
-                Args:
+
+        Args:
             player_idx: index of the player to check for a win.
+
         Returns:
             True if player has won, False otherwise.
         """
@@ -70,6 +76,7 @@ class GenericEnv:
 
     def get_valid_actions(self) -> list[int]:
         """Extracts valid actions from env.
+
         Returns:
             list of valid actions as integers (1-9).
         """
@@ -77,8 +84,10 @@ class GenericEnv:
 
     def decode_action(self, action: int | tuple[int, int]) -> tuple[int, int]:
         """Ensures action is encoded as tuple (row, col).
+
         Args:
             action: action as integer (1-9 tris, 1-7 connect4) or tuple (row, col).
+
         Returns:
             action as tuple (row, col).
         """

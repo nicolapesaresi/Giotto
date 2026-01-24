@@ -1,30 +1,33 @@
-import random
-import os
 import json
-import torch
-import torch.nn.functional as F
+import os
+import random
+from collections import deque
 from datetime import datetime
 from pathlib import Path
+
+import torch
+import torch.nn.functional as F
 from tqdm import tqdm
-from collections import deque
+
 from giotto.agents.algorithms.value_net.value_net import ValueNet
-from giotto.envs.generic import GenericEnv
 from giotto.agents.generic import GenericAgent
-from giotto.agents.random import RandomAgent
 from giotto.agents.giotto import GiottoAgent
+from giotto.agents.random import RandomAgent
+from giotto.envs.generic import GenericEnv
 from giotto.utils.simmetries import EquivalentBoards
 
 
 class ValueNetTrainer:
+    """Trainer for Value Network."""
+
     def __init__(self, env: GenericEnv):
         self.base_env = env
-        self.net = ValueNet(
-            board_cols=self.base_env.cols, board_rows=self.base_env.rows
-        )
+        self.net = ValueNet(board_cols=self.base_env.cols, board_rows=self.base_env.rows)
 
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-3)
 
     def simulate_game(self, agents: list):
+        """Simulate a game between the given agents and return the game memory."""
         new_memory = []
         states = []
 
@@ -48,6 +51,7 @@ class ValueNetTrainer:
         return new_memory
 
     def self_play(self, n_games: int, mcts_sims: int):
+        """Generate self-play games using the current value network."""
         games = []
         for _ in tqdm(range(n_games), desc="Self-play in progress..."):
             agents = [
@@ -59,9 +63,8 @@ class ValueNetTrainer:
         return games
 
     def augment_games(self, games: list) -> list:
-        if hasattr(self.base_env, "simmetries") and isinstance(
-            self.base_env.simmetries, EquivalentBoards
-        ):
+        """Augment games using symmetries if available."""
+        if hasattr(self.base_env, "simmetries") and isinstance(self.base_env.simmetries, EquivalentBoards):
             augmented = []
             for state, result in games:
                 board, player_id = state
@@ -80,6 +83,7 @@ class ValueNetTrainer:
         mcts_sims: int,
         buffer_length: int,
     ):
+        """Train the value network."""
         self.net.train()
         train_losses = []
         replay_buffer = deque(maxlen=buffer_length)
@@ -89,10 +93,8 @@ class ValueNetTrainer:
             augmented = self.augment_games(new_games)
             replay_buffer.extend(augmented)
 
-            for step in range(steps_per_epoch):
-                batch = random.sample(
-                    replay_buffer, min(len(replay_buffer), batch_size)
-                )
+            for _ in range(steps_per_epoch):
+                batch = random.sample(replay_buffer, min(len(replay_buffer), batch_size))
 
                 self.optimizer.zero_grad()
                 batch_loss = 0.0
@@ -122,9 +124,7 @@ class ValueNetTrainer:
         # vs random
         results = []
         agents = [GiottoAgent(simulations=mcts_sims, valuenet=self.net), opp]
-        pbar = tqdm(
-            range(n_games), desc=f"Playing vs {opp.name}", ncols=100, leave=True
-        )
+        pbar = tqdm(range(n_games), desc=f"Playing vs {opp.name}", ncols=100, leave=True)
         for _ in range(n_games):
             env = self.base_env.clone()
             env.reset()
@@ -143,9 +143,8 @@ class ValueNetTrainer:
             )
         return results
 
-    def save_metrics(
-        self, path: str, train_losses: list, test_results: list, config: dict
-    ):
+    def save_metrics(self, path: str, train_losses: list, test_results: list, config: dict):
+        """Save training and testing metrics to a JSON file."""
         results = {
             "train_mse": train_losses,
             "test_results": test_results,
@@ -158,6 +157,7 @@ class ValueNetTrainer:
             json.dump(config, f)
 
     def save_model(self, path: str):
+        """Save the model and optimizer state to a file."""
         torch.save(
             {
                 "model_state_dict": self.net.state_dict(),
@@ -167,6 +167,7 @@ class ValueNetTrainer:
         )
 
     def load_model(self, path: str):
+        """Load the model and optimizer state from a file."""
         checkpoint = torch.load(path, map_location="cpu")
         self.net.load_state_dict(checkpoint["model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
@@ -181,6 +182,7 @@ class ValueNetTrainer:
         buffer_length: int,
         log_dir: str,
     ):
+        """Run the training and testing process."""
         train_games = n_games
         test_games = 100
         games_per_epoch = train_games // epochs
@@ -198,9 +200,7 @@ class ValueNetTrainer:
 
         print("Testing ...")
         test_results = self.test(test_games, mcts_sims, RandomAgent())
-        print(
-            f"[Test] vs Random: {test_results.count(0)} W, {test_results.count(-1)} D, {test_results.count(1)} L"
-        )
+        print(f"[Test] vs Random: {test_results.count(0)} W, {test_results.count(-1)} D, {test_results.count(1)} L")
 
         self.save_metrics(
             path=os.path.join(log_dir, "results.json"),
@@ -222,9 +222,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Value Net training")
-    parser.add_argument(
-        "-g", "--game", help="game to play [tris, connect4]", required=True
-    )
+    parser.add_argument("-g", "--game", help="game to play [tris, connect4]", required=True)
     args = vars(parser.parse_args())
 
     # game
@@ -237,7 +235,7 @@ if __name__ == "__main__":
 
         env = Connect4Env()
     else:
-        raise ValueError(f"{args["game"]} not a valid game")
+        raise ValueError(f"{args['game']} not a valid game")
 
     LOGS_DIR = (
         Path(__file__).parent

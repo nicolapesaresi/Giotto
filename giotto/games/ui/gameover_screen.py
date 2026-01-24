@@ -1,7 +1,8 @@
 import pygame
 from pygame.sprite import Group
-from giotto.games.ui.texts import ResultSprite, PressToGoToMenuText
+
 from giotto.games.ui.states import States
+from giotto.games.ui.texts import PressToGoToMenuText, ResultSprite
 
 
 class GameOver:
@@ -9,15 +10,14 @@ class GameOver:
 
     def __init__(self, result: int | str, settings_module):
         """Instantiates game over screen.
+
         Args:
             result: game result to display.
             settings_module: settings configuration for the chosen game.
         """
         self.settings = settings_module
         self.game_over_texts = Group()
-        self.game_over_texts.add(
-            ResultSprite(result, self.settings), PressToGoToMenuText(self.settings)
-        )
+        self.game_over_texts.add(ResultSprite(result, self.settings), PressToGoToMenuText(self.settings))
 
     def draw(self, screen: pygame.Surface):
         """Draw elements on the screen."""

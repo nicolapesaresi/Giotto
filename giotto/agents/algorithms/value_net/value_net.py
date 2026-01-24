@@ -1,11 +1,20 @@
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class ValueNet(nn.Module):
+    """Value networks for 2-player board games."""
+
     def __init__(self, board_rows: int, board_cols, n_players: int = 2):
+        """Initializes value network.
+
+        Args:
+            board_rows: number of rows of the board.
+            board_cols: number of columns of the board.
+            n_players: number of players (default: 2).
+        """
         super().__init__()
         self.board_rows = board_rows
         self.board_cols = board_cols
@@ -19,6 +28,7 @@ class ValueNet(nn.Module):
         self.fc2 = nn.Linear(64, 1)
 
     def forward(self, x):
+        """Forward pass of value network."""
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
 

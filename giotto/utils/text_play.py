@@ -1,21 +1,23 @@
-from tqdm import tqdm
-from giotto.envs.generic import GenericEnv
-from giotto.agents.generic import GenericAgent
-from collections import Counter
 import random
+from collections import Counter
+
+from tqdm import tqdm
+
+from giotto.agents.generic import GenericAgent
+from giotto.envs.generic import GenericEnv
 
 
-def play_game(
-    env: GenericEnv, agents: list[GenericAgent], starter: int = 0, render: bool = True
-):
+def play_game(env: GenericEnv, agents: list[GenericAgent], starter: int = 0, render: bool = True):
     """Plays a game between two agents.
+
     Args:
         env: game environment.
         agents: list of two agents.
         starter: index of player that has to start.
         render: wether to print the game.
+
     Returns:
-        winner_sign, winner_idx, winner_name
+        winner_sign, winner_idx, winner_name.
     """
     env.reset(starting_player=starter)
 
@@ -33,9 +35,7 @@ def play_game(
             print(f"Game over - {env.signs[env.info['winner']]} wins.")
     winner_sign = env.signs[env.info["winner"]]
     winner_idx = env.info["winner"]
-    winner_name = (
-        agents[env.info["winner"]].name if env.info["winner"] != -1 else "Draw"
-    )
+    winner_name = agents[env.info["winner"]].name if env.info["winner"] != -1 else "Draw"
     return winner_sign, winner_idx, winner_name
 
 
@@ -68,12 +68,8 @@ def play_n_games(
 
     # Final recap
     for agent in agents:
-        print(
-            f"{agent.name}: {winners[agent.name]} / {n_games} ({(winners[agent.name]/n_games)*100:.2f}%)"
-        )
-    print(
-        f"Draws: {winners['Draw']} / {n_games} ({(winners['Draw']/n_games)*100:.2f}%)"
-    )
+        print(f"{agent.name}: {winners[agent.name]} / {n_games} ({(winners[agent.name]/n_games)*100:.2f}%)")
+    print(f"Draws: {winners['Draw']} / {n_games} ({(winners['Draw']/n_games)*100:.2f}%)")
 
 
 def initialized_game(
@@ -84,14 +80,16 @@ def initialized_game(
     render: bool = True,
 ):
     """Plays a game between two agents with fixed or random first move.
+
     Args:
         env: game environment.
         agents: list of two agents.
         starter: index of player that has to start.
-        firstmove: first move of the game. If None, chosen at random.
+        first_move: first move of the game. If None, chosen at random.
         render: wether to print the game.
+
     Returns:
-        winner_sign, winner_idx, winner_name
+        winner_sign, winner_idx, winner_name.
     """
     env.reset(starting_player=starter)
 
@@ -116,7 +114,5 @@ def initialized_game(
             print(f"Game over - {env.signs[env.info['winner']]} wins.")
     winner_sign = env.signs[env.info["winner"]]
     winner_idx = env.info["winner"]
-    winner_name = (
-        agents[env.info["winner"]].name if env.info["winner"] != -1 else "Draw"
-    )
+    winner_name = agents[env.info["winner"]].name if env.info["winner"] != -1 else "Draw"
     return winner_sign, winner_idx, winner_name

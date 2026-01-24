@@ -1,10 +1,11 @@
 import pygame
-import giotto.games.settings.settings_global as settings_global
+
+from giotto.games.settings import settings_global
 from giotto.games.settings.agent_settings import PLAYER_ORDER
 
 
 class Button(pygame.sprite.Sprite):
-    """Generic button sprite"""
+    """Generic button sprite."""
 
     def __init__(
         self,
@@ -19,6 +20,7 @@ class Button(pygame.sprite.Sprite):
         settings_module=None,
     ):
         """Instantiates button sprite.
+
         Args:
             text: button text.
             pos: center position of the button.
@@ -42,6 +44,7 @@ class Button(pygame.sprite.Sprite):
 
     def set_text(self, text: str):
         """Sets button text.
+
         Args:
             text: button text.
         """
@@ -57,8 +60,11 @@ class Button(pygame.sprite.Sprite):
 
 
 class PlayerSelectButton(Button):
+    """Button to select player type."""
+
     def __init__(self, label, pos, initial_type, settings_module=None):
         """Instantiates player select button.
+
         Args:
             label: "X" or "O".
             pos: center position of the button.

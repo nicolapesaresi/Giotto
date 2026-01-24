@@ -2,6 +2,8 @@ import numpy as np
 
 
 class ValueNetNumpy:
+    """NumPy implementation of ValueNet for 2-player board games."""
+
     def __init__(self, board_rows: int, board_cols: int, n_players: int = 2):
         """Identical signature to Torch version."""
         self.board_rows = board_rows
@@ -10,6 +12,7 @@ class ValueNetNumpy:
 
     @staticmethod
     def process_state(state):
+        """Processes env state into value network input."""
         board, player_id = state
         opp_id = 1 - player_id
         current = (board == player_id).astype(np.float32)
@@ -17,6 +20,7 @@ class ValueNetNumpy:
         return np.stack([current, opponent], axis=0)[None]  # [1,2,H,W]
 
     def forward(self, x):
+        """Forward pass of value network."""
         # Exact Conv2D → ReLU → Flatten → FC → tanh
         x = self._conv2d(x, self.conv1_w, self.conv1_b)
         x = np.maximum(x, 0)  # ReLU
@@ -59,26 +63,17 @@ class ValueNetNumpy:
                     dj : dj + stride * wout : stride,
                 ]
 
-        # Reshape for GEMM
         # (batch * hout * wout, cin * kh * kw)
         cols = cols.transpose(0, 4, 5, 1, 2, 3).reshape(batch * hout * wout, -1)
-
-        # Flatten filters
-        # (cout, cin * kh * kw)
         w_col = w.reshape(cout, -1)
-
-        # Matrix multiply
         out = cols @ w_col.T  # (batch*hout*wout, cout)
-
-        # Add bias
         out += b
-
-        # Reshape back to NCHW
         out = out.reshape(batch, hout, wout, cout).transpose(0, 3, 1, 2)
 
         return out.astype(np.float32)
 
     def load_numpy_weights(self, path):
+        """Loads weights from .npz file."""
         data = np.load(path)
         self.conv1_w, self.conv1_b = data["conv1.weight"], data["conv1.bias"]
         self.conv2_w, self.conv2_b = data["conv2.weight"], data["conv2.bias"]
@@ -86,11 +81,13 @@ class ValueNetNumpy:
         self.fc2_w, self.fc2_b = data["fc2.weight"], data["fc2.bias"]
 
     def __call__(self, x: np.ndarray):
-        """EXACT nn.Module behavior: model(x) → forward(x)"""
+        """Replica of torch nn.Module behavior: model(x) → forward(x)."""
         return self.forward(x)
 
     def eval(self):
+        """Dummy eval() method for compatibility."""  # noqa: D402
         pass  # NumPy always eval
 
     def load_state_dict(self, state_dict):
+        """Dummy method for compatibility."""
         raise RuntimeError("Use load_numpy_weights() for NumPyValueNet")

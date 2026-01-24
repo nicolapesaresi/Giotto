@@ -1,10 +1,11 @@
 import pygame
 from pygame.sprite import Group
-import giotto.games.settings.settings_connect4 as settings_connect4
-from giotto.games.settings.agent_settings import AGENT_CLASS_MAP
+
 from giotto.envs.connect4 import Connect4Env
-from giotto.games.ui.texts import XOSprite, TurnSprite
 from giotto.games.generic import GenericGame
+from giotto.games.settings import settings_connect4
+from giotto.games.settings.agent_settings import AGENT_CLASS_MAP
+from giotto.games.ui.texts import TurnSprite, XOSprite
 
 
 class PygameConnect4(GenericGame):
@@ -17,18 +18,15 @@ class PygameConnect4(GenericGame):
         from_launcher: bool = False,
     ):
         """Instantiates pygame renderer for Connect4.
+
         Args:
             screen: None for desktop mode, pygame screen for browser.
             start_at_menu: whether pygame starts form main menu or runs directly.
             from_launcher: whether game was started from launcher.
         """
         env = Connect4Env()
-        player_types = {
-            pt: AGENT_CLASS_MAP[pt] for pt in settings_connect4.SUPPORTED_PLAYER_TYPES
-        }
-        super().__init__(
-            env, settings_connect4, player_types, screen, start_at_menu, from_launcher
-        )
+        player_types = {pt: AGENT_CLASS_MAP[pt] for pt in settings_connect4.SUPPORTED_PLAYER_TYPES}
+        super().__init__(env, settings_connect4, player_types, screen, start_at_menu, from_launcher)
 
     def check_move_click(self, event) -> int | None:
         """Checks human input for move."""
@@ -185,9 +183,7 @@ class PygameConnect4(GenericGame):
                     sign = self.env.signs[player_id]
 
                     draw_row = self.env.rows - 1 - row
-                    moves.add(
-                        XOSprite(sign, draw_row, col, settings_module=settings_connect4)
-                    )
+                    moves.add(XOSprite(sign, draw_row, col, settings_module=settings_connect4))
 
         moves.draw(self.screen)
 
@@ -206,6 +202,7 @@ class PygameConnect4(GenericGame):
 
 # -----------
 def launch():
+    """Directly launches Connect4 game."""
     PygameConnect4().run()
 
 

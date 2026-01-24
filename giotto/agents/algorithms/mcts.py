@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 import math
 import random
+
 from giotto.envs.generic import GenericEnv
 
 # try except block to make it work in browser mode
 try:
     BROWSER_MODE = False
     import torch
+
     from giotto.agents.algorithms.value_net.value_net import ValueNet
 except ImportError:
     BROWSER_MODE = True
@@ -26,6 +29,7 @@ class MCTSNode:
         player_just_moved: int = None,
     ):
         """Instantiates MCTS node.
+
         Args:
             env: environment state at this node.
             parent: parent node.
@@ -69,9 +73,7 @@ class MCTSNode:
             else:
                 exploitation = -child.avg_value
 
-            exploration = cpuct * math.sqrt(
-                math.log(self.total_visits) / child.total_visits
-            )
+            exploration = cpuct * math.sqrt(math.log(self.total_visits) / child.total_visits)
 
             ucb = exploitation + exploration
 
@@ -94,10 +96,11 @@ class MCTS:
         valuenet: ValueNet | None = None,
     ):
         """Instantiates MCTS class.
+
         Args:
             n_simulations: number of simulations to run per move.
             cpuct: exploration constant.
-            value_net: value network for node evaluation. If None, rollouts are used.
+            valuenet: value network for node evaluation. If None, rollouts are used.
         """
         self.n_simulations = n_simulations
         self.cpuct = cpuct
@@ -129,7 +132,8 @@ class MCTS:
                 action = random.choice(node.untried_actions)
                 node.untried_actions.remove(action)
 
-                player_just_moved = sim_env.current_player  # must update before step because current_player isn't updated by env after terminal move
+                # must update who just moved before step because current_player isn't updated by env after terminal move
+                player_just_moved = sim_env.current_player
                 sim_env.step(action)
 
                 child = MCTSNode(

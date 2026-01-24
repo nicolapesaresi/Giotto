@@ -1,10 +1,13 @@
-import torch
-import numpy as np
 import argparse
+
+import numpy as np
+import torch
+
 from giotto.agents.algorithms.value_net.value_net import ValueNet
 
 
 def convert_pt_to_npz(pt_path: str, npz_path: str):
+    """Convert a .pt checkpoint of a ValueNet to a .npz file."""
     if "tris" in pt_path.lower():
         model = ValueNet(board_cols=3, board_rows=3)
     elif "connect4" in pt_path.lower():

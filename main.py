@@ -1,25 +1,29 @@
-import asyncio
+import asyncio  # noqa: I001
 import numpy  # needed here, otherwise pygbag breaks  # noqa: F401
-
-# torch is not used in browser mode, numpy version of neural network is used instead
 import pygame
 from enum import IntEnum
+
 import giotto.games.settings.settings_global as settings
+from giotto.games.connect4 import PygameConnect4
 from giotto.games.launcher import PygameLauncher
 from giotto.games.tris import PygameTris
-from giotto.games.connect4 import PygameConnect4
 from giotto.games.ui.states import States
+
+# torch is not used in browser mode, numpy version of neural network is used instead
 
 pygame.init()
 screen = pygame.display.set_mode((settings.WIDTH, settings.HEIGHT))
 
 
 class GlobalStates(IntEnum):
+    """Manages main loop states."""
+
     LAUNCHER = 0
     GAME = 1
 
 
 async def main():
+    """Main loop for browser mode."""
     global_state = GlobalStates.LAUNCHER
     launcher = PygameLauncher(screen)
 
@@ -78,9 +82,7 @@ async def main():
 
                 if action is None and not game.is_human_turn():
                     pygame.time.delay(200)
-                    action = game.agents[game.env.current_player].select_action(
-                        game.env
-                    )
+                    action = game.agents[game.env.current_player].select_action(game.env)
 
                 if action is not None:
                     game.env.step(action)
