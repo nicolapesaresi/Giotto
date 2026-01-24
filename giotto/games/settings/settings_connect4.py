@@ -1,5 +1,5 @@
 import giotto.games.settings.settings_global as settings_global
-from giotto.games.ui.player_types import PlayerType
+from giotto.games.settings.agent_settings import PlayerType
 
 GAME_TITLE = "Giotto Connect4"
 CAPTION = settings_global.CAPTION
@@ -49,4 +49,5 @@ SUPPORTED_PLAYER_TYPES = [
     PlayerType.RANDOM,
     # PlayerType.MINIMAX, # too slow for connect4
     PlayerType.MCTS,
+    PlayerType.GIOTTO_C4,
 ]

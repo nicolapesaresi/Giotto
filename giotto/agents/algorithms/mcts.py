@@ -1,9 +1,28 @@
+from __future__ import annotations
 import math
 import random
+import torch
+from giotto.envs.generic import GenericEnv
+from giotto.agents.algorithms.value_net.value_net import ValueNet
 
 
 class MCTSNode:
-    def __init__(self, env, parent=None, parent_action=None, player_just_moved=None):
+    """Node in MCTS tree."""
+
+    def __init__(
+        self,
+        env: GenericEnv,
+        parent: MCTSNode = None,
+        parent_action: int = None,
+        player_just_moved: int = None,
+    ):
+        """Instantiates MCTS node.
+        Args:
+            env: environment state at this node.
+            parent: parent node.
+            parent_action: action taken to reach this node from parent.
+            player_just_moved: index of player who made the move leading to this node.
+        """
         self.env = env
         self.parent = parent
         self.parent_action = parent_action
@@ -11,7 +30,7 @@ class MCTSNode:
         # Player who made the move leading to this node
         self.player_just_moved = player_just_moved
 
-        self.children = {}  # action -> MCTSNode
+        self.children: dict[int, MCTSNode] = {}
         self.untried_actions = env.get_valid_actions()
 
         self.total_visits = 0
@@ -19,16 +38,15 @@ class MCTSNode:
 
     @property
     def avg_value(self):
+        """Returns average value of this node."""
         return 0.0 if self.total_visits == 0 else self.total_value / self.total_visits
 
     def is_fully_expanded(self):
+        """Determines if all actions have been tried from this node."""
         return len(self.untried_actions) == 0
 
-    def best_child(self, cpuct):
-        """
-        Select child maximizing UCT from the perspective of
-        the player to move at *this* node.
-        """
+    def best_child(self, cpuct: float):
+        """Selects child maximizing UCT from the perspective of the player to move at this node."""
         best_score = -math.inf
         best_children = []
 
@@ -58,12 +76,26 @@ class MCTSNode:
 
 
 class MCTS:
-    def __init__(self, n_simulations=1000, cpuct=1.4):
+    """Monte Carlo Tree Search algorithm."""
+
+    def __init__(
+        self,
+        n_simulations: int = 1000,
+        cpuct: float = 1.4,
+        valuenet: ValueNet | None = None,
+    ):
+        """Instantiates MCTS class.
+        Args:
+            n_simulations: number of simulations to run per move.
+            cpuct: exploration constant.
+            value_net: value network for node evaluation. If None, rollouts are used.
+        """
         self.n_simulations = n_simulations
         self.cpuct = cpuct
+        self.valuenet = valuenet
 
-    def run(self, env):
-        # Root player MUST be reset every move
+    def run(self, env: GenericEnv):
+        """Runs MCTS to select action."""
         root_player = env.current_player
 
         root_env = env.clone()
@@ -78,18 +110,18 @@ class MCTS:
             node = root
             sim_env = env.clone()
 
-            # -------- SELECTION --------
+            # SELECTION
             while not sim_env.done and node.is_fully_expanded() and node.children:
                 action, node = node.best_child(self.cpuct)
                 sim_env.step(action)
 
-            # -------- EXPANSION --------
+            # EXPANSION
             if not sim_env.done and node.untried_actions:
                 action = random.choice(node.untried_actions)
                 node.untried_actions.remove(action)
 
+                player_just_moved = sim_env.current_player  # must update before step because current_player isn't updated by env after terminal move
                 sim_env.step(action)
-                player_just_moved = 1 - sim_env.current_player
 
                 child = MCTSNode(
                     sim_env.clone(),
@@ -101,24 +133,33 @@ class MCTS:
                 node.children[action] = child
                 node = child
 
-            # -------- SIMULATION --------
-            result = self.rollout(sim_env, root_player)
+            # SIMULATION
+            # if available, use value network, otherwise rollouts
+            if self.valuenet:
+                result = self.valuenet_eval(sim_env, root_player)
+            else:
+                result = self.rollout(sim_env, root_player)
 
-            # -------- BACKPROP --------
+            # BACKPROPAGATION
             self.backpropagate(node, result, root_player)
 
-        # Choose most visited action
+        # # visualize
+        # for parentaction, child in root.children.items():
+        #     print(f"action {parentaction}: avg value {child.avg_value} visits {child.total_visits}")
+        # print(max(
+        #     root.children.items(),
+        #     key=lambda item: item[1].total_visits,
+        # ))
+
+        # choose most visited action
         action, _ = max(
             root.children.items(),
             key=lambda item: item[1].total_visits,
         )
         return action
 
-    def rollout(self, env, root_player):
-        """Random playout until terminal state."""
-        while not env.done:
-            env.step(random.choice(env.get_valid_actions()))
-
+    def terminal_node_eval(self, env: GenericEnv, root_player: int):
+        """Evaluates terminal nodes for backpropagation."""
         winner = env.info["winner"]
         if winner == -1:
             return 0
@@ -127,11 +168,35 @@ class MCTS:
         else:
             return -1
 
-    def backpropagate(self, node, result, root_player):
-        """
-        result is from root_player's perspective.
-        Convert to each node's player_just_moved perspective.
-        """
+    def rollout(self, env: GenericEnv, root_player: int):
+        """Random playout until terminal state."""
+        while not env.done:
+            env.step(random.choice(env.get_valid_actions()))
+
+        return self.terminal_node_eval(env, root_player)
+
+    def valuenet_eval(self, env: GenericEnv, root_player: int):
+        """Value network evaluation of current state."""
+        # terminal state check
+        if env.done:
+            return self.terminal_node_eval(env, root_player)
+
+        state = env.get_state()
+        value_input = self.valuenet.process_state(state)
+
+        with torch.no_grad():
+            value = self.valuenet(value_input).item()  # value for current_player
+
+        current_player = env.current_player
+
+        # convert to root player's perspective
+        if current_player == root_player:
+            return value
+        else:
+            return -value
+
+    def backpropagate(self, node: MCTSNode, result: int, root_player: int):
+        """Backpropagates simulation result up the tree."""
         while node is not None:
             node.total_visits += 1
 

@@ -1,5 +1,6 @@
 import numpy as np
 from giotto.envs.generic import GenericEnv
+from giotto.utils.simmetries import EquivalentBoards
 
 
 class TrisEnv(GenericEnv):
@@ -11,6 +12,16 @@ class TrisEnv(GenericEnv):
         rows = 3
         cols = 3
         super().__init__(signs, rows, cols)
+        self.simmetries = EquivalentBoards(
+            rotate90=True,
+            rotate180=True,
+            rotate270=True,
+            reflect_horizontal=True,
+            reflect_vertical=True,
+            reflect_diag_nw_se=True,
+            reflect_diag_ne_sw=True,
+        )
+
         self.reset()
 
     def check_win(self, player_idx: int) -> bool:
@@ -39,10 +50,10 @@ class TrisEnv(GenericEnv):
             list of valid actions as integers (1-9).
         """
         valid_actions = []
-        for r in range(3):
-            for c in range(3):
+        for r in range(self.rows):
+            for c in range(self.cols):
                 if self.board[r, c] == -1:
-                    action_int = r * 3 + c + 1  # convert to 1-9
+                    action_int = r * self.cols + c + 1  # convert to 1-9
                     valid_actions.append(action_int)
         return valid_actions
 
