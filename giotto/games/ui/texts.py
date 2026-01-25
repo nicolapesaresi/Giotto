@@ -66,12 +66,13 @@ class XOSprite(TextSprite):
 class TurnSprite(pygame.sprite.Sprite):
     """Sprite to show current turn."""
 
-    def __init__(self, sign: str, turn: int, settings_module):
+    def __init__(self, sign: str, turn: int, name: str, settings_module):
         """Instantiates turn sprite.
 
         Args:
             sign: "x" or "o".
             turn: current turn number.
+            name: name of the agent that is to play.
             settings_module: settings module for the game.
         """
         super().__init__()
@@ -84,7 +85,7 @@ class TurnSprite(pygame.sprite.Sprite):
         self.font = pygame.font.Font(None, font_size)
 
         before = f"Turn {turn} - "
-        after = " to move"
+        after = f" ({name}) to move"
 
         surf_before = self.font.render(before, True, self.text_color)
         surf_sign = self.font.render(sign.upper(), True, self.sign_color)
@@ -106,11 +107,12 @@ class TurnSprite(pygame.sprite.Sprite):
 class ResultSprite(pygame.sprite.Sprite):
     """Final result sprite."""
 
-    def __init__(self, result: str | int, settings_module):
+    def __init__(self, result: str | int, name: str | None, settings_module):
         """Instantiates result sprite.
 
         Args:
             result: "x", "o" or -1 for draw.
+            name: name of the agent who won.
             settings_module: settings module for the game.
         """
         super().__init__()
@@ -127,7 +129,7 @@ class ResultSprite(pygame.sprite.Sprite):
             text = before + "draw"
             self.image = self.font.render(text, True, self.text_color)
         else:
-            after = " wins"
+            after = f" ({name}) wins"
             surf_before = self.font.render(before, True, self.text_color)
             surf_sign = self.font.render(result.upper(), True, self.sign_color)
             surf_after = self.font.render(after, True, self.text_color)

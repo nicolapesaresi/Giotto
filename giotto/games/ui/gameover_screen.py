@@ -9,16 +9,17 @@ from giotto.games.ui.texts import ResultSprite
 class GameOver:
     """Handles game over screen."""
 
-    def __init__(self, result: int | str, settings_module):
+    def __init__(self, result: int | str, name: str | None, settings_module):
         """Instantiates game over screen.
 
         Args:
             result: game result to display.
+            name: name of agent who won.
             settings_module: settings configuration for the chosen game.
         """
         self.settings = settings_module
         self.game_over_texts = Group()
-        self.game_over_texts.add(ResultSprite(result, self.settings))  # , PressToGoToMenuText(self.settings))
+        self.game_over_texts.add(ResultSprite(result, name, self.settings))  # , PressToGoToMenuText(self.settings))
         self.buttons = Group()
         self.buttons.add(BackToMenuButton(settings_module=self.settings))
 

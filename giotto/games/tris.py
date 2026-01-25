@@ -103,6 +103,7 @@ class PygameTris(GenericGame):
             TurnSprite(
                 self.env.signs[self.env.current_player],
                 self.env.turn_counter + 1,
+                self.agents[self.env.current_player].name,
                 settings,
             )
         )
