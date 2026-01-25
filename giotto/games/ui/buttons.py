@@ -59,6 +59,46 @@ class Button(pygame.sprite.Sprite):
         return self.rect.collidepoint(mouse_pos)
 
 
+class StartButton(Button):
+    """Button to start the game."""
+
+    def __init__(self, settings_module=None):
+        """Instantiates start button.
+
+        Args:
+            settings_module: settings module for the game.
+        """
+        pos = (settings_module.WIDTH // 2, int(settings_module.HEIGHT * 0.55))
+        super().__init__(
+            text="START",
+            pos=pos,
+            text_color="black",
+            bg_color="yellow",
+            size=(settings_global.WIDTH * 0.2, settings_global.HEIGHT * 0.1),
+            settings_module=settings_module,
+        )
+
+
+class BackToMenuButton(Button):
+    """Button to go back to the main menu."""
+
+    def __init__(self, settings_module=None):
+        """Instantiates back to menu button.
+
+        Args:
+            settings_module: settings module for the game.
+        """
+        pos = (settings_module.WIDTH // 2, settings_module.HEIGHT * 0.92)
+        super().__init__(
+            text="MENU",
+            pos=pos,
+            text_color="black",
+            bg_color="yellow",
+            size=(settings_global.WIDTH * 0.2, settings_global.HEIGHT * 0.07),
+            settings_module=settings_module,
+        )
+
+
 class PlayerSelectButton(Button):
     """Button to select player type."""
 

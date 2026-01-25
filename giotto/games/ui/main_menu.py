@@ -1,9 +1,11 @@
 import pygame
 from pygame.sprite import Group
 
-from giotto.games.ui.buttons import Button, PlayerSelectButton
+from giotto.games.ui.buttons import Button, PlayerSelectButton, StartButton
 from giotto.games.ui.states import States
-from giotto.games.ui.texts import PressToPlayText, TitleText
+
+# from giotto.games.ui.texts import PressToPlayText
+from giotto.games.ui.texts import TitleText
 
 
 class MainMenu:
@@ -23,8 +25,8 @@ class MainMenu:
         self.buttons = Group()
 
         self.main_menu_texts.add(
-            TitleText(self.settings),
-            PressToPlayText(self.settings),
+            TitleText(self.settings)
+            # PressToPlayText(self.settings),
         )
 
         if self.from_launcher:
@@ -34,6 +36,8 @@ class MainMenu:
                 size=(250, 60),
                 settings_module=self.settings,
             )
+
+        self.start_button = StartButton(settings_module=self.settings)
 
         self.x_button = PlayerSelectButton(
             "X",
@@ -48,7 +52,7 @@ class MainMenu:
             settings_module=self.settings,
         )
 
-        self.buttons.add(self.x_button, self.o_button)
+        self.buttons.add(self.start_button, self.x_button, self.o_button)
         if self.from_launcher:
             self.buttons.add(self.back_button)
 
@@ -68,16 +72,24 @@ class MainMenu:
                     if button.clicked(event.pos):
                         if isinstance(button, PlayerSelectButton):
                             button.next_option()
+                        elif isinstance(button, StartButton):
+                            return (
+                                States.GAME,
+                                {
+                                    "o_player": self.o_button.player_type,
+                                    "x_player": self.x_button.player_type,
+                                },
+                            )
                         else:
                             return States.LAUNCHER
 
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                return (
-                    States.GAME,
-                    {
-                        "o_player": self.o_button.player_type,
-                        "x_player": self.x_button.player_type,
-                    },
-                )
+            # elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            #     return (
+            #         States.GAME,
+            #         {
+            #             "o_player": self.o_button.player_type,
+            #             "x_player": self.x_button.player_type,
+            #         },
+            #     )
 
         return States.MENU
