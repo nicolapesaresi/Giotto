@@ -147,7 +147,7 @@ class GenericGame:
                 result = -1
             else:
                 result = getattr(self.env, "signs", lambda: [])[winner]
-                winner_name = self.agents[winner].name
+            winner_name = self.agents[winner].name if winner != -1 else None
             self.gameover = GameOver(result, winner_name, self.settings)
         self.draw_screen()
         self.gameover.draw(self.screen)
