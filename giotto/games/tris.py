@@ -30,28 +30,18 @@ class PygameTris(GenericGame):
 
     def check_move_click(self, event) -> int | None:
         """Checks human input for move."""
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = pygame.mouse.get_pos()
-            cell = None
-            if settings.GRID_X0 < x < settings.GRID_X1 and settings.GRID_Y0 < y < settings.GRID_Y1:
-                cell = 1
-            elif settings.GRID_X1 < x < settings.GRID_X2 and settings.GRID_Y0 < y < settings.GRID_Y1:
-                cell = 2
-            elif settings.GRID_X2 < x < settings.GRID_X3 and settings.GRID_Y0 < y < settings.GRID_Y1:
-                cell = 3
-            elif settings.GRID_X0 < x < settings.GRID_X1 and settings.GRID_Y1 < y < settings.GRID_Y2:
-                cell = 4
-            elif settings.GRID_X1 < x < settings.GRID_X2 and settings.GRID_Y1 < y < settings.GRID_Y2:
-                cell = 5
-            elif settings.GRID_X2 < x < settings.GRID_X3 and settings.GRID_Y1 < y < settings.GRID_Y2:
-                cell = 6
-            elif settings.GRID_X0 < x < settings.GRID_X1 and settings.GRID_Y2 < y < settings.GRID_Y3:
-                cell = 7
-            elif settings.GRID_X1 < x < settings.GRID_X2 and settings.GRID_Y2 < y < settings.GRID_Y3:
-                cell = 8
-            elif settings.GRID_X2 < x < settings.GRID_X3 and settings.GRID_Y2 < y < settings.GRID_Y3:
-                cell = 9
-            if cell is not None and cell in self.env.get_valid_actions():
+        # mouse
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            pos = event.pos
+        # touchscreen
+        elif event.type == pygame.FINGERDOWN:
+            # finger events give normalized coordinates (0..1)
+            w, h = self.screen.get_size()
+            pos = (event.x * w, event.y * h)
+        else:
+            return None
+        for cell, rect in self.get_grid_rects().items():
+            if rect.collidepoint(pos) and cell in self.env.get_valid_actions():
                 return cell
         return None
 
@@ -108,6 +98,66 @@ class PygameTris(GenericGame):
             )
         )
         texts.draw(self.screen)
+
+    @staticmethod
+    def get_grid_rects() -> dict[int, pygame.Rect]:
+        """Retrievs grid rects for clicking on the board."""
+        return {
+            1: pygame.Rect(
+                settings.GRID_X0,
+                settings.GRID_Y0,
+                settings.GRID_X1 - settings.GRID_X0,
+                settings.GRID_Y1 - settings.GRID_Y0,
+            ),
+            2: pygame.Rect(
+                settings.GRID_X1,
+                settings.GRID_Y0,
+                settings.GRID_X2 - settings.GRID_X1,
+                settings.GRID_Y1 - settings.GRID_Y0,
+            ),
+            3: pygame.Rect(
+                settings.GRID_X2,
+                settings.GRID_Y0,
+                settings.GRID_X3 - settings.GRID_X2,
+                settings.GRID_Y1 - settings.GRID_Y0,
+            ),
+            4: pygame.Rect(
+                settings.GRID_X0,
+                settings.GRID_Y1,
+                settings.GRID_X1 - settings.GRID_X0,
+                settings.GRID_Y2 - settings.GRID_Y1,
+            ),
+            5: pygame.Rect(
+                settings.GRID_X1,
+                settings.GRID_Y1,
+                settings.GRID_X2 - settings.GRID_X1,
+                settings.GRID_Y2 - settings.GRID_Y1,
+            ),
+            6: pygame.Rect(
+                settings.GRID_X2,
+                settings.GRID_Y1,
+                settings.GRID_X3 - settings.GRID_X2,
+                settings.GRID_Y2 - settings.GRID_Y1,
+            ),
+            7: pygame.Rect(
+                settings.GRID_X0,
+                settings.GRID_Y2,
+                settings.GRID_X1 - settings.GRID_X0,
+                settings.GRID_Y3 - settings.GRID_Y2,
+            ),
+            8: pygame.Rect(
+                settings.GRID_X1,
+                settings.GRID_Y2,
+                settings.GRID_X2 - settings.GRID_X1,
+                settings.GRID_Y3 - settings.GRID_Y2,
+            ),
+            9: pygame.Rect(
+                settings.GRID_X2,
+                settings.GRID_Y2,
+                settings.GRID_X3 - settings.GRID_X2,
+                settings.GRID_Y3 - settings.GRID_Y2,
+            ),
+        }
 
 
 # -----------

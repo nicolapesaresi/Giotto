@@ -30,45 +30,18 @@ class PygameConnect4(GenericGame):
 
     def check_move_click(self, event) -> int | None:
         """Checks human input for move."""
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = pygame.mouse.get_pos()
-            col = None
-            if (
-                settings_connect4.GRID_X0 < x < settings_connect4.GRID_X1
-                and settings_connect4.GRID_Y0 < y < settings_connect4.GRID_Y6
-            ):
-                col = 1
-            elif (
-                settings_connect4.GRID_X1 < x < settings_connect4.GRID_X2
-                and settings_connect4.GRID_Y0 < y < settings_connect4.GRID_Y6
-            ):
-                col = 2
-            elif (
-                settings_connect4.GRID_X2 < x < settings_connect4.GRID_X3
-                and settings_connect4.GRID_Y0 < y < settings_connect4.GRID_Y6
-            ):
-                col = 3
-            elif (
-                settings_connect4.GRID_X3 < x < settings_connect4.GRID_X4
-                and settings_connect4.GRID_Y0 < y < settings_connect4.GRID_Y6
-            ):
-                col = 4
-            elif (
-                settings_connect4.GRID_X4 < x < settings_connect4.GRID_X5
-                and settings_connect4.GRID_Y0 < y < settings_connect4.GRID_Y6
-            ):
-                col = 5
-            elif (
-                settings_connect4.GRID_X5 < x < settings_connect4.GRID_X6
-                and settings_connect4.GRID_Y0 < y < settings_connect4.GRID_Y6
-            ):
-                col = 6
-            elif (
-                settings_connect4.GRID_X6 < x < settings_connect4.GRID_X7
-                and settings_connect4.GRID_Y0 < y < settings_connect4.GRID_Y6
-            ):
-                col = 7
-            if col is not None and col in self.env.get_valid_actions():
+        # mouse
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            pos = event.pos
+        # touchscreen
+        elif event.type == pygame.FINGERDOWN:
+            # finger events give normalized coordinates (0..1)
+            w, h = self.screen.get_size()
+            pos = (event.x * w, event.y * h)
+        else:
+            return None
+        for col, rect in self.get_grid_rects().items():
+            if rect.collidepoint(pos) and col in self.env.get_valid_actions():
                 return col
         return None
 
@@ -199,6 +172,27 @@ class PygameConnect4(GenericGame):
             )
         )
         texts.draw(self.screen)
+
+    @staticmethod
+    def get_grid_rects() -> dict[int, pygame.Rect]:
+        """Retrievs grid rects for clicking on the board."""
+        rects = {}
+        col_coords = [
+            settings_connect4.GRID_X0,
+            settings_connect4.GRID_X1,
+            settings_connect4.GRID_X2,
+            settings_connect4.GRID_X3,
+            settings_connect4.GRID_X4,
+            settings_connect4.GRID_X5,
+            settings_connect4.GRID_X6,
+            settings_connect4.GRID_X7,
+        ]
+        y0 = settings_connect4.GRID_Y0
+        y1 = settings_connect4.GRID_Y6
+
+        for i in range(7):
+            rects[i + 1] = pygame.Rect(col_coords[i], y0, col_coords[i + 1] - col_coords[i], y1 - y0)
+        return rects
 
 
 # -----------
