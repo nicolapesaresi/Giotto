@@ -31,7 +31,7 @@ class MCTSNode:
         """Instantiates MCTS node.
 
         Args:
-            env: environment state at this node.
+            env: environment at this node.
             parent: parent node.
             parent_action: action taken to reach this node from parent.
             player_just_moved: index of player who made the move leading to this node.
