@@ -68,8 +68,8 @@ class TrisEnv(GenericEnv):
         Returns:
             action as tuple (row, col).
         """
-        if isinstance(action, int):
-            action_int = action - 1  # convert to 0-8
+        if isinstance(action, (int | np.integer)):
+            action_int = int(action) - 1  # convert to 0-8
             action = (action_int // 3, action_int % 3)
         return action
 

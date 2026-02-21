@@ -72,8 +72,8 @@ class Connect4Env(GenericEnv):
         Returns:
             action as tuple (row, col).
         """
-        if isinstance(action, int):
-            action_col = action - 1  # convert to 0-6
+        if isinstance(action, (int | np.integer)):
+            action_col = int(action) - 1  # convert to 0-6
             col_values = [row[action_col] for row in self.board]
             action_row = next((i for i, val in enumerate(col_values) if val == -1), None)
             if action_row is None:
