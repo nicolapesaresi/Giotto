@@ -112,11 +112,10 @@ class AlphaZeroNet(nn.Module):
     def predict(self, state: list[np.ndarray, int]):
         """Predict (policy_probs, value) as numpy."""
         device = next(self.parameters()).device
-        self.eval()
 
         input_tensor = self.process_state(state).to(device)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             policy_logits, value_tensor = self.forward(input_tensor)
             policy_probs = F.softmax(policy_logits, dim=1)
 

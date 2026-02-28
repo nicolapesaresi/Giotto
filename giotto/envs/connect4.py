@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 
 from giotto.envs.generic import GenericEnv
 from giotto.utils.simmetries import EquivalentBoards
@@ -29,28 +30,29 @@ class Connect4Env(GenericEnv):
 
     def check_win(self, player_idx: int) -> bool:
         """Checks if the given player has won."""
-        board = self.board
-        # horizontal
-        for r in range(self.rows):
-            for c in range(self.cols - 3):
-                if np.all(board[r, c : c + 4] == player_idx):
-                    return True
-        # vertical
-        for c in range(self.cols):
-            for r in range(self.rows - 3):
-                if np.all(board[r : r + 4, c] == player_idx):
-                    return True
-        # diagonal (top-left → bottom-right)
-        for r in range(self.rows - 3):
-            for c in range(self.cols - 3):
-                if all(board[r + i, c + i] == player_idx for i in range(4)):
-                    return True
-        # diagonal / (bottom-left → top-right)
-        for r in range(3, self.rows):
-            for c in range(self.cols - 3):
-                if all(board[r - i, c + i] == player_idx for i in range(4)):
-                    return True
-        return False
+        player_mask = self.board == player_idx
+
+        # Horizontal: windows of 4 along columns for each row
+        horiz_windows = sliding_window_view(player_mask, window_shape=(1, 4)).squeeze(axis=2)  # (rows, cols-3, 4)
+        if np.any(np.all(horiz_windows, axis=-1)):
+            return True
+
+        # Vertical: windows of 4 along rows for each column
+        vert_windows = sliding_window_view(player_mask, window_shape=(4, 1)).squeeze(axis=3)  # (rows-3, cols, 4)
+        if np.any(np.all(vert_windows, axis=-1)):
+            return True
+
+        # Diagonal (\): windows of 4x4, check main diagonal
+        square_windows = sliding_window_view(player_mask, window_shape=(4, 4))  # (rows-3, cols-3, 4, 4)
+        diag_down_right = np.diagonal(square_windows, axis1=-2, axis2=-1)  # (rows-3, cols-3, 4)
+        if np.any(np.all(diag_down_right, axis=-1)):
+            return True
+
+        # Diagonal (/): same 4x4 windows, check anti-diagonal by flipping columns
+        flipped_mask = player_mask[:, ::-1]
+        square_windows_flipped = sliding_window_view(flipped_mask, window_shape=(4, 4))
+        diag_up_right = np.diagonal(square_windows_flipped, axis1=-2, axis2=-1)
+        return bool(np.any(np.all(diag_up_right, axis=-1)))
 
     def get_valid_actions(self) -> list[int]:
         """Extracts valid actions from env.
@@ -58,12 +60,9 @@ class Connect4Env(GenericEnv):
         Returns:
             list of valid actions as integers (1-7).
         """
-        valid_actions = []
-        for c in range(self.cols):
-            col_values = [row[c] for row in self.board]
-            if -1 in col_values:  # Has empty slot
-                valid_actions.append(c + 1)  # 1-7
-        return valid_actions
+        # checks if top row is empty or not for each column
+        playable = (self.board == -1).any(axis=0)
+        return (np.nonzero(playable)[0] + 1).tolist()
 
     def decode_action(self, action: int | tuple[int, int]) -> tuple[int, int]:
         """Ensures action is encoded as tuple (row, col).
