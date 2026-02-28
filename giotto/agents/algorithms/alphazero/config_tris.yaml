@@ -1,0 +1,29 @@
+game: tris
+network:
+  input_size: [2, 3, 3] # n_players, rows, cols
+  policy_output_size: 9 # number of possible actions
+  value_output_size: 1 # output of value network, usually 1
+  residual_blocks: 5 # number of residual blocks
+  channels: 64 # planes in shared trunk residual blocks
+training:
+  iterations: 50
+  games_per_iteration: 200
+  batch_size: 128
+  buffer_size: 20000
+  learning_rate: 0.01
+mcts:
+  n_sims: 100
+  cpuct: 1.4 # exploration factor
+  dirichlet_alpha: 0.3 # parameter of dirichlet distribution
+  dirichlet_epsilon: 0.25 # impact of noise on priors
+  # temperature in training is handled like this:
+  # if temperature is not 0.0, use that value until a number of moves (decided
+  # by the temperature schedule parameter) is reached. Then dropped to greedy.
+  # This encourages exploration at beginning of branches and exploitation in endgames.
+  temperature: 0.0 # adds noise on decision [0.0 equals greedy]
+  temperature_schedule: 5 # move at which temperature is dropped to greedy
+eval:
+  run_eval: true
+  eval_dataset: ../../../../eval_datasets/tris_positions.jsonl
+info: # additional experiment notes
+  ""

@@ -5,6 +5,7 @@ python ./giotto/scripts/initialized_game.py -g connect4 -p random -o random -m 4
 
 import argparse
 
+from giotto.agents.alphazero import AlphaZeroAgent
 from giotto.agents.giotto import GiottoAgent
 from giotto.agents.human import HumanAgent
 from giotto.agents.mcts import MCTSAgent
@@ -57,6 +58,8 @@ if __name__ == "__main__":
         player = MinimaxAgent()
     elif args["player"].lower() == "giotto":
         player = GiottoAgent(game=args["game"])
+    elif args["alphazero"].lower() == "alphazero":
+        player = AlphaZeroAgent(simulations=100, game=args["game"])
     else:
         raise ValueError(f"{args['player']} not a valid opponent")
 
@@ -71,6 +74,8 @@ if __name__ == "__main__":
         opp = MinimaxAgent()
     elif args["opp"].lower() == "giotto":
         opp = GiottoAgent(game=args["game"])
+    elif args["opp"].lower() == "alphazero":
+        opp = AlphaZeroAgent(simulations=100, game=args["game"])
     else:
         raise ValueError(f"{args['opp']} not a valid opponent")
 

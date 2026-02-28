@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 
 from giotto.envs.generic import GenericEnv
@@ -107,5 +109,5 @@ class Connect4Env(GenericEnv):
         new_env.current_player = self.current_player
         new_env.turn_counter = self.turn_counter
         new_env.done = self.done
-        new_env.info = self.info.copy()
+        new_env.info = deepcopy(self.info)
         return new_env

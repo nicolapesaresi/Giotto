@@ -54,8 +54,10 @@ class GenericEnv:
         elif self.turn_counter == self.rows * self.cols:
             self.done = True
             self.info["winner"] = -1  # Draw
-        else:
-            self.current_player = (self.current_player + 1) % 2
+
+        # update current player
+        # do this also when game finished, as it's needed for mcts
+        self.current_player = (self.current_player + 1) % 2
 
     def get_state(self) -> list[np.ndarray, int]:
         """Returns state of the env."""

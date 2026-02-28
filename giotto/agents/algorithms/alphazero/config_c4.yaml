@@ -1,0 +1,42 @@
+# game: connect4
+# training:
+#   iterations: 100
+#   games_per_iteration: 200
+#   batch_size: 128
+#   buffer_size: 100000
+#   learning_rate: 0.001
+# mcts:
+#   n_sims: 800
+#   cpuct: 2.5
+#   dirichlet_alpha: 0.3
+#   dirichlet_epsilon: 0.25
+
+game: connect4
+network:
+  input_size: [2, 6, 7] # n_players, rows, cols
+  policy_output_size: 7 # number of possible actions
+  value_output_size: 1 # output of value network, usually 1
+  residual_blocks: 10 # number of residual blocks
+  channels: 128 # planes in shared trunk residual blocks
+training:
+  iterations: 30
+  games_per_iteration: 50
+  batch_size: 32
+  buffer_size: 30000
+  learning_rate: 0.02
+mcts:
+  n_sims: 400
+  cpuct: 3.5 # exploration factor
+  dirichlet_alpha: 1.0 # parameter of dirichlet distribution
+  dirichlet_epsilon: 0.25 # impact of noise on priors
+  # temperature in training is handled like this:
+  # if temperature is not 0.0, use that value until a number of moves (decided
+  # by the temperature schedule parameter) is reached. Then dropped to greedy.
+  # This encourages exploration at beginning of branches and exploitation in endgames.
+  temperature: 1.0 # adds noise on decision [0.0 equals greedy]
+  temperature_schedule: 20 # move at which temperature is dropped to greedy
+eval:
+  run_eval: true
+  eval_dataset: ../../../../eval_datasets/connect4_positions.jsonl
+info: # additional experiment notes
+  ""

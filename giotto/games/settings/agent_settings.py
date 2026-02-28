@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from giotto.agents.giotto import GiottoAgent
+from giotto.agents.alphazero import AlphaZeroAgent
 from giotto.agents.human import HumanAgent
 from giotto.agents.mcts import MCTSAgent
 from giotto.agents.minimax import MinimaxAgent
@@ -16,8 +16,8 @@ class PlayerType(Enum):
     RANDOM = "Random"
     MINIMAX = "Minimax"
     MCTS = "MCTS"
-    GIOTTO_TRIS = "Giotto_tris"
-    GIOTTO_C4 = "Giotto_c4"
+    GIOTTO_TRIS = "Giotto"
+    GIOTTO_C4 = "Giottone"
 
 
 PLAYER_ORDER = [
@@ -34,6 +34,6 @@ AGENT_CLASS_MAP = {
     PlayerType.RANDOM: RandomAgent,
     PlayerType.MINIMAX: MinimaxAgent,
     PlayerType.MCTS: lambda: MCTSAgent(simulations=1000, cpuct=1.4),
-    PlayerType.GIOTTO_TRIS: lambda: GiottoAgent(game="tris", simulations=1000),
-    PlayerType.GIOTTO_C4: lambda: GiottoAgent(game="connect4", simulations=2000),
+    PlayerType.GIOTTO_TRIS: lambda: AlphaZeroAgent(game="tris", simulations=100, cpuct=1.5),
+    PlayerType.GIOTTO_C4: lambda: AlphaZeroAgent(game="connect4", simulations=800, cpuct=3.5),
 }

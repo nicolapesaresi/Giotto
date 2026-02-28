@@ -4,6 +4,7 @@ version = "2.0.0"
 description = "Tic Tac Toe AI"
 authors = ["Nicola Pesaresi"]
 readme = "README.md"
+packages = [{include = "giotto"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -12,12 +13,18 @@ pandas = "^2.2.3"
 torch = "^2.5.1"
 tqdm = "^4.67.1"
 pygame = "^2.6.1"
+pyyaml = "^6.0.3"
+matplotlib = "^3.10.8"
 
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.5.1"
 pygbag = "^0.9.2"
 ghp-import = "^2.1.0"
+
+
+[tool.poetry.group.solver.dependencies]
+bitbully = "^0.0.75"
 
 [build-system]
 requires = ["poetry-core"]
