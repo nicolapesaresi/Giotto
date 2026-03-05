@@ -46,7 +46,7 @@ if __name__ == "__main__":
     elif args["opp"].lower() == "giotto":
         opp = GiottoAgent(simulations=100, game=args["game"])
     elif args["opp"].lower() == "alphazero":
-        opp = AlphaZeroAgent(simulations=100, game=args["game"])
+        opp = AlphaZeroAgent(simulations=400, game=args["game"])
     else:
         raise ValueError(f"{args['opp']} not a valid opponent")
 

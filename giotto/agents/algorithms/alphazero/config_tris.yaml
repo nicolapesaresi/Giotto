@@ -25,5 +25,7 @@ mcts:
 eval:
   run_eval: true
   eval_dataset: ../../../../eval_datasets/tris_positions.jsonl
+  play_vs_mcts: true
+  n_matches: 100
 info: # additional experiment notes
   ""

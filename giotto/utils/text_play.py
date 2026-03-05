@@ -70,6 +70,7 @@ def play_n_games(
     for agent in agents:
         print(f"{agent.name}: {winners[agent.name]} / {n_games} ({(winners[agent.name]/n_games)*100:.2f}%)")
     print(f"Draws: {winners['Draw']} / {n_games} ({(winners['Draw']/n_games)*100:.2f}%)")
+    return winners
 
 
 def initialized_game(

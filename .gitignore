@@ -168,3 +168,4 @@ cython_debug/
 logs/
 .vscode/
 *.jsonl
+.DS_Store

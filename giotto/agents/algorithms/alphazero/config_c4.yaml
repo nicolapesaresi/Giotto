@@ -38,5 +38,7 @@ mcts:
 eval:
   run_eval: true
   eval_dataset: ../../../../eval_datasets/connect4_positions.jsonl
+  play_vs_mcts: true
+  n_matches: 50
 info: # additional experiment notes
   ""

@@ -20,7 +20,10 @@ import matplotlib.pyplot as plt
 
 from giotto.agents.algorithms.alphazero.mcts import AlphaZeroMCTS, AZNode
 from giotto.agents.algorithms.alphazero.net import AlphaZeroNet
+from giotto.agents.alphazero import AlphaZeroAgent
+from giotto.agents.mcts import MCTSAgent
 from giotto.envs.generic import GenericEnv
+from giotto.utils.text_play import play_n_games
 
 logging.basicConfig(
     level=logging.INFO,
@@ -155,6 +158,33 @@ class AlphaZeroTrainer:
         ax.grid(True, alpha=0.3)
         ax.legend()
         _save(fig, "val_value_errors.png")
+
+        # Plot 4: match vs MCTS
+        def _extract_test(metric_name: str):
+            values = []
+            for it in self.metrics["iterations"]:
+                t = it.get("match_metrics")
+                values.append(None if not t else t.get(metric_name))
+            return [np.nan if v is None else float(v) for v in values]
+
+        az_name = "AlphaZeroAgent"
+        mcts_name = "MCTSAgent"
+
+        test_az_win = _extract_test(az_name)
+        test_mcts_win = _extract_test(mcts_name)
+        test_draw = _extract_test("Draw")
+
+        fig, ax = plt.subplots(figsize=(8, 4.5))
+        ax.plot(iterations, test_az_win, marker="o", label=f"{az_name} win rate")
+        ax.plot(iterations, test_mcts_win, marker="o", label=f"{mcts_name} win rate")
+        ax.plot(iterations, test_draw, marker="o", label="Draw rate")
+        ax.set_title("Test vs MCTS (no-net baseline)")
+        ax.set_xlabel("Iteration")
+        ax.set_ylabel("Rate")
+        ax.set_ylim(0.0, 1.0)
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        _save(fig, "test_vs_mcts_rates.png")
 
     # ============================
     # Self Play
@@ -312,6 +342,30 @@ class AlphaZeroTrainer:
             "value_sign_accuracy": float(value_sign_correct / total_positions),
         }
 
+    def test_vs_mcts(self, n_games: int):
+        """Plays a number of games against MCTS without network to evaluate result."""
+        self.net.eval()
+
+        az_agent = AlphaZeroAgent(
+            game=self.config["game"],
+            simulations=self.config["mcts"]["n_sims"],
+            cpuct=self.config["mcts"]["cpuct"],
+            net=self.net,
+        )
+        mcts_agent = MCTSAgent(
+            simulations=self.config["mcts"]["n_sims"],
+            cpuct=self.config["mcts"]["cpuct"],
+        )
+        agents = [az_agent, mcts_agent]
+
+        winners = play_n_games(n_games, self.base_env.clone(), agents, invert_starts=True)
+
+        test_results = {}
+        for agent in agents:
+            test_results[agent.name] = winners[agent.name] / float(n_games)
+        test_results["Draw"] = winners["Draw"] / float(n_games)
+        return test_results
+
     # ============================
     # Training
     # ============================
@@ -416,20 +470,6 @@ class AlphaZeroTrainer:
             self.save_model(f"checkpoint_iter_{iteration_index + 1}.pt")
 
             # -------------------
-            # Gating
-            # -------------------
-            # TODO: implement model gating
-            # accepted = False
-            # if win_rate > 0.55:
-            #     accepted = True
-            #     best_net = copy.deepcopy(self.net)
-            #     self.save_model("best_model.pt")
-            #     logger.info("New model accepted.")
-            # else:
-            #     self.net.load_state_dict(best_net.state_dict())
-            #     logger.info("New model rejected; reverted to best.")
-
-            # -------------------
             # Validation
             # -------------------
             valid_metrics = None
@@ -437,6 +477,11 @@ class AlphaZeroTrainer:
                 valid_metrics = self.validate(
                     jsonl_path=Path(__file__).parent / self.config["eval"]["eval_dataset"], draw_band=0.1
                 )
+
+            if self.config["eval"]["play_vs_mcts"]:
+                match_metrics = self.test_vs_mcts(self.config["eval"]["n_matches"])
+            else:
+                match_metrics = {}
 
             # -------------------
             # Metrics
@@ -448,8 +493,7 @@ class AlphaZeroTrainer:
                     "avg_total_loss": float(avg_total),
                     "avg_policy_loss": float(avg_policy),
                     "avg_value_loss": float(avg_value),
-                    # "gating_win_rate": win_rate,
-                    # "accepted": accepted,
+                    "match_metrics": match_metrics,
                     "validation_metrics": valid_metrics,
                 }
             )

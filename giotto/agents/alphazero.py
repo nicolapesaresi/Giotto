@@ -23,7 +23,7 @@ class AlphaZeroAgent(GenericAgent):
 
     def __init__(
         self,
-        name: str = "AlphaZero",
+        name: str = "AlphaZeroAgent",
         game: str | None = None,
         simulations: int = 800,
         cpuct: float = 1.4,
