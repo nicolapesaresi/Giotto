@@ -54,6 +54,10 @@ class AlphaZeroNet(nn.Module):
         self.channels = channels
         self.residual_blocks = residual_blocks
 
+        # Cached device and pre-allocated inference buffer (avoids per-call overhead)
+        self._device = torch.device("cpu")
+        self._np_buf = np.zeros((input_size[0], input_size[1], input_size[2]), dtype=np.float32)
+
         # initial convolution
         self.conv = nn.Conv2d(self.input_size[0], self.channels, 3, padding=1, bias=False)
         self.bn = nn.BatchNorm2d(self.channels)
@@ -97,6 +101,12 @@ class AlphaZeroNet(nn.Module):
 
         return p, v
 
+    def to(self, *args, **kwargs):
+        """Override to keep _device in sync after moving the module."""
+        result = super().to(*args, **kwargs)
+        result._device = next(result.parameters()).device
+        return result
+
     @staticmethod
     def process_state(state: list[np.ndarray, int]):
         """Process state as returned to env to network input."""
@@ -111,9 +121,11 @@ class AlphaZeroNet(nn.Module):
 
     def predict(self, state: list[np.ndarray, int]):
         """Predict (policy_probs, value) as numpy."""
-        device = next(self.parameters()).device
-
-        input_tensor = self.process_state(state).to(device)
+        board, player_id = state
+        buf = self._np_buf
+        buf[0] = board == player_id
+        buf[1] = board == (1 - player_id)
+        input_tensor = torch.from_numpy(buf).unsqueeze(0).to(self._device)
 
         with torch.inference_mode():
             policy_logits, value_tensor = self.forward(input_tensor)
@@ -122,3 +134,23 @@ class AlphaZeroNet(nn.Module):
         policy = policy_probs.detach().cpu().numpy().squeeze()
         value = value_tensor.detach().cpu().numpy().squeeze()
         return policy, value
+
+    def batch_predict(self, states: list[list[np.ndarray, int]]) -> tuple[np.ndarray, np.ndarray]:
+        """Predict (policy_probs, values) for a batch of states as numpy arrays.
+
+        Args:
+            states: List of [board, player_id] states.
+
+        Returns:
+            Tuple of (policies, values) with shapes (B, A) and (B,).
+        """
+        tensors = [self.process_state(s) for s in states]
+        batch = torch.cat(tensors, dim=0).to(self._device)
+
+        with torch.inference_mode():
+            policy_logits, value_tensor = self.forward(batch)
+            policy_probs = F.softmax(policy_logits, dim=1)
+
+        policies = policy_probs.detach().cpu().numpy()
+        values = value_tensor.detach().cpu().numpy().squeeze(-1)
+        return policies, values

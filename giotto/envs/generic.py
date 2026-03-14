@@ -34,9 +34,6 @@ class GenericEnv:
             action: index of board cell that will be played by current player.
                 Has to be integer (1-9 for tris, 1-7 for connect4).
         """
-        assert (
-            action in self.get_valid_actions()
-        ), f"Received invalid action {action, type(action)}, has to be int in {self.get_valid_actions()}"
         self.info["moves"].append(action)
 
         # decode action

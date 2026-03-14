@@ -72,5 +72,5 @@ class AlphaZeroAgent(GenericAgent):
             n_simulations=self.simulations,
             cpuct=self.cpuct,
         )
-        action, _root = mcts.run(env)
+        action, _root = mcts.run(env, temperature=0.0)
         return action

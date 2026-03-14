@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
+import math
 import os
 import random
+import traceback
 from collections import deque
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +20,7 @@ from tqdm import tqdm
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import torch.multiprocessing as mp
 
 from giotto.agents.algorithms.alphazero.mcts import AlphaZeroMCTS, AZNode
 from giotto.agents.algorithms.alphazero.net import AlphaZeroNet
@@ -30,6 +34,162 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def _set_worker_threads(num_processes: int) -> None:
+    """Avoid CPU oversubscription when spawning multiple processes.
+
+    PyTorch warns that each subprocess may try to use all vCPUs (via intra-op threads),
+    so cap torch threads per process to roughly floor(N/M).
+    """
+    try:
+        n_cpus = os.cpu_count() or 1
+        threads = max(1, int(math.floor(n_cpus / max(1, num_processes))))
+        torch.set_num_threads(threads)
+    except Exception:
+        pass
+
+
+def _run_self_play_game(
+    net: AlphaZeroNet,
+    base_env: GenericEnv,
+    config: dict,
+) -> list[dict]:
+    """Generate one self-play game with MCTS tree reuse between moves.
+
+    Returns a list of {state, policy_target, value_target} records.
+    """
+    env = base_env.clone()
+    env.reset()
+    move_count = 0
+    episode_records = []
+
+    mcts = AlphaZeroMCTS(
+        net,
+        n_simulations=config["mcts"]["n_sims"],
+        cpuct=config["mcts"]["cpuct"],
+        dirichlet_alpha=config["mcts"]["dirichlet_alpha"],
+        dirichlet_eps=config["mcts"]["dirichlet_epsilon"],
+    )
+
+    while not env.done:
+        schedule = config["mcts"]["temperature_schedule"]
+        temperature = config["mcts"]["temperature"] if move_count < schedule else 0.0
+
+        action, root = mcts.run(env, temperature=temperature)
+
+        # Build policy target from root visit counts
+        visit_counts = np.zeros(net.policy_output_size, dtype=np.float32)
+        for action_idx_1based, child in root.children.items():
+            visit_counts[action_idx_1based - 1] = float(child.n_visits)
+        policy_target = visit_counts / visit_counts.sum()
+
+        episode_records.append({"state": env.get_state(), "policy_target": policy_target})
+        env.step(action)
+        mcts.advance_root(action)  # reuse subtree for next move
+        move_count += 1
+
+    winner = env.info["winner"]
+    for record in episode_records:
+        if winner == -1:
+            record["value_target"] = 0.0
+        else:
+            record["value_target"] = 1.0 if winner == record["state"][1] else -1.0
+
+    return episode_records
+
+
+def _self_play_worker(
+    worker_id: int,
+    n_games: int,
+    base_env: GenericEnv,
+    config: dict,
+    device: str,
+    net_state_dict: dict,
+    out_queue: mp.SimpleQueue,
+    num_processes: int,
+    seed: int | None = None,
+) -> None:
+    """Worker that generates self-play data and pushes it to out_queue."""
+    try:
+        _set_worker_threads(num_processes)
+
+        if seed is not None:
+            random.seed(seed + worker_id)
+            np.random.seed(seed + worker_id)
+            torch.manual_seed(seed + worker_id)
+
+        net = AlphaZeroNet(
+            input_size=config["network"]["input_size"],
+            value_output_size=config["network"]["value_output_size"],
+            policy_output_size=config["network"]["policy_output_size"],
+            channels=config["network"]["channels"],
+            residual_blocks=config["network"]["residual_blocks"],
+        )
+        net.load_state_dict(net_state_dict, strict=True)
+        net = net.to(device)
+        net.eval()
+
+        local_data = []
+        for _ in range(int(n_games)):
+            local_data.extend(_run_self_play_game(net, base_env, config))
+
+        out_queue.put(("ok", worker_id, local_data))
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        out_queue.put(("err", worker_id, f"{e}\n{tb}"))
+
+
+def _eval_worker(
+    worker_id: int,
+    n_games: int,
+    base_env: GenericEnv,
+    config: dict,
+    device: str,
+    net_state_dict: dict,
+    out_queue: mp.SimpleQueue,
+    num_processes: int,
+    seed: int | None = None,
+) -> None:
+    """Worker that plays evaluation matches vs MCTS and returns aggregated rates."""
+    try:
+        _set_worker_threads(num_processes)
+
+        if seed is not None:
+            random.seed(seed + 10_000 + worker_id)
+            np.random.seed(seed + 10_000 + worker_id)
+            torch.manual_seed(seed + 10_000 + worker_id)
+
+        net = AlphaZeroNet(
+            input_size=config["network"]["input_size"],
+            value_output_size=config["network"]["value_output_size"],
+            policy_output_size=config["network"]["policy_output_size"],
+            channels=config["network"]["channels"],
+            residual_blocks=config["network"]["residual_blocks"],
+        )
+        net.load_state_dict(net_state_dict, strict=True)
+        net = net.to(device)
+        net.eval()
+
+        az_agent = AlphaZeroAgent(
+            game=config["game"],
+            simulations=config["mcts"]["n_sims"],
+            cpuct=config["mcts"]["cpuct"],
+            net=net,
+        )
+        mcts_agent = MCTSAgent(
+            simulations=config["mcts"]["n_sims"],
+            cpuct=config["mcts"]["cpuct"],
+        )
+        agents = [az_agent, mcts_agent]
+
+        winners = play_n_games(int(n_games), base_env.clone(), agents, invert_starts=True)
+        out_queue.put(("ok", worker_id, winners))
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        out_queue.put(("err", worker_id, f"{e}\n{tb}"))
 
 
 class AlphaZeroTrainer:
@@ -87,6 +247,15 @@ class AlphaZeroTrainer:
         path = self.save_dir / name
         self.net.load_state_dict(torch.load(path, map_location=self.device))
 
+    def load_metrics(self) -> None:
+        """Load metrics from disk, merging with the current empty structure."""
+        metrics_path = self.save_dir / "metrics.yaml"
+        if metrics_path.exists():
+            with open(metrics_path) as f:
+                loaded = yaml.safe_load(f)
+            if loaded:
+                self.metrics = loaded
+
     def save_metrics(self) -> None:
         """Save metrics to disk."""
         metrics_path = self.save_dir / "metrics.yaml"
@@ -109,7 +278,6 @@ class AlphaZeroTrainer:
             for it in self.metrics["iterations"]:
                 valid = it.get("validation_metrics")
                 values.append(None if not valid else valid.get(metric_name))
-            # matplotlib skips NaN nicely; None can be problematic -> convert to NaN
             return [np.nan if v is None else float(v) for v in values]
 
         val_policy_strong_acc = _extract_valid("policy_strong_acc")
@@ -193,59 +361,19 @@ class AlphaZeroTrainer:
     def build_policy_target_from_root(self, root: AZNode) -> np.ndarray:
         """Extracts the training targets from MCTS node."""
         visit_counts = np.zeros(self.net.policy_output_size, dtype=np.float32)
-
         for action_index_1based, child_node in root.children.items():
-            action_index_0based = action_index_1based - 1
-            visit_counts[action_index_0based] = float(child_node.n_visits)
-
-        total_visits = float(visit_counts.sum())
-        policy_target = visit_counts / total_visits
-        return policy_target
+            visit_counts[action_index_1based - 1] = float(child_node.n_visits)
+        return visit_counts / visit_counts.sum()
 
     def self_play_game(self) -> list:
-        """Generate one self-play game."""
+        """Generate one self-play game with MCTS tree reuse between moves."""
         self.net.eval()
-        episode_records = []
-
-        env = self.base_env.clone()
-        env.reset()
-        move_count = 0
-        while not env.done:
-            schedule = self.config["mcts"]["temperature_schedule"]
-            temperature = self.config["mcts"]["temperature"] if move_count < schedule else 0.0
-
-            mcts = AlphaZeroMCTS(
-                self.net,
-                n_simulations=self.config["mcts"]["n_sims"],
-                cpuct=self.config["mcts"]["cpuct"],
-                dirichlet_alpha=self.config["mcts"]["dirichlet_alpha"],
-                dirichlet_eps=self.config["mcts"]["dirichlet_epsilon"],
-                temperature=temperature,
-            )
-            action, root = mcts.run(env)
-            policy_target = self.build_policy_target_from_root(root)
-            episode_records.append(
-                {
-                    "state": env.get_state(),
-                    "policy_target": policy_target,
-                }
-            )
-            env.step(action)
-            move_count += 1
-
-        winner = env.info["winner"]
-        for record in episode_records:
-            if winner == -1:
-                value_target = 0.0
-            else:
-                value_target = 1.0 if winner == record["state"][1] else -1.0
-            record["value_target"] = value_target
-
+        records = _run_self_play_game(self.net, self.base_env, self.config)
         self.net.train()
-        return episode_records
+        return records
 
     def self_play(self, n_games: int) -> list[dict]:
-        """Generate dataset via self-play."""
+        """Generate dataset via self-play (single process)."""
         data = []
         for _ in tqdm(range(n_games), desc="Self-play"):
             data.extend(self.self_play_game())
@@ -263,94 +391,102 @@ class AlphaZeroTrainer:
             for aug in move_augmentations:
                 augmented.append(
                     {
-                        "state": [aug[0], move["state"][1]],  # reconstruct state
+                        "state": [aug[0], move["state"][1]],
                         "policy_target": aug[1],
                         "value_target": move["value_target"],
                     }
                 )
-
         return augmented
 
     # ============================
     # Validation
     # ============================
+
     def validate(self, jsonl_path: str | Path, max_lines: int | None = None, draw_band: float = 0.1) -> dict:
         """Validate the net against a JSONL dataset with fields:
         - state: [board, player_id]
         - strong_best_moves: [int, ...]   (1-based)
         - gto_result: -1/0/1.
         """
-        self.net.eval()
+        net = self.net
+        net.eval()
 
-        total_positions = 0
-        strong_correct = 0
-        weak_correct = 0
-        value_mse = 0.0
-        value_mae = 0.0
-        value_sign_correct = 0
+        states: list = []
+        strong_moves_list: list = []
+        weak_moves_list: list = []
+        gto_results: list = []
 
         try:
             with open(jsonl_path, encoding="utf-8") as file:
-                for _idx, line in enumerate(file, start=1):
-                    if max_lines is not None and total_positions >= max_lines:
+                for line in file:
+                    if max_lines is not None and len(states) >= max_lines:
                         break
-
                     line = line.strip()  # noqa: PLW2901
                     if not line:
                         continue
-
                     record = json.loads(line)
-
-                    board_list, player_id = record["state"]
-                    board_array = np.asarray(board_list, dtype=np.int64)
-                    state = [board_array, int(player_id)]
-
-                    strong_best_moves = record.get("strong_best_moves", None)
-                    weak_best_moves = record.get("weak_best_moves", None)
-                    gto_result = record.get("gto_result", None)
+                    strong_best_moves = record.get("strong_best_moves")
+                    weak_best_moves = record.get("weak_best_moves")
+                    gto_result = record.get("gto_result")
                     if strong_best_moves is None or weak_best_moves is None or gto_result is None:
                         continue
-
-                    policy, value = self.net.predict(state)
-
-                    total_positions += 1
-                    # policy metrics
-                    best_action = policy.argmax() + 1
-                    if best_action in strong_best_moves:
-                        strong_correct += 1
-                    if best_action in weak_best_moves:
-                        weak_correct += 1
-                    # value metrics
-                    value_error = value - gto_result
-                    value_mse += value_error * value_error
-                    value_mae += np.abs(value_error)
-                    if (np.abs(value) < draw_band and gto_result == 0) or np.sign(value) == np.sign(gto_result):
-                        value_sign_correct += 1
+                    board_list, player_id = record["state"]
+                    states.append([np.asarray(board_list, dtype=np.int64), int(player_id)])
+                    strong_moves_list.append(strong_best_moves)
+                    weak_moves_list.append(weak_best_moves)
+                    gto_results.append(gto_result)
         except Exception as e:
             logging.warning(f"Running validation failed: {e}")
             return None
 
+        total_positions = len(states)
         if total_positions == 0:
             return {"total_positions": 0}
+
+        # Batch predict in chunks of 256
+        batch_size = 256
+        all_policies: list[np.ndarray] = []
+        all_values: list[np.ndarray] = []
+        for i in range(0, total_positions, batch_size):
+            chunk = states[i : i + batch_size]
+            policies, values = net.batch_predict(chunk)
+            all_policies.append(policies)
+            all_values.append(values)
+
+        policies_arr = np.concatenate(all_policies, axis=0)  # (N, A)
+        values_arr = np.concatenate(all_values, axis=0)  # (N,)
+        gto_arr = np.array(gto_results, dtype=np.float32)
+
+        best_actions = policies_arr.argmax(axis=1) + 1  # 1-based
+        strong_correct = sum(int(a in s) for a, s in zip(best_actions, strong_moves_list))
+        weak_correct = sum(int(a in w) for a, w in zip(best_actions, weak_moves_list))
+
+        value_errors = values_arr - gto_arr
+        value_mse = float(np.mean(value_errors**2))
+        value_mae = float(np.mean(np.abs(value_errors)))
+        value_sign_correct = int(
+            np.sum((np.abs(values_arr) < draw_band) & (gto_arr == 0) | (np.sign(values_arr) == np.sign(gto_arr)))
+        )
 
         return {
             "total_positions": int(total_positions),
             "policy_strong_acc": float(strong_correct / total_positions),
             "policy_weak_acc": float(weak_correct / total_positions),
-            "value_mse": float(value_mse / total_positions),
-            "value_mae": float(value_mae / total_positions),
+            "value_mse": value_mse,
+            "value_mae": value_mae,
             "value_sign_accuracy": float(value_sign_correct / total_positions),
         }
 
     def test_vs_mcts(self, n_games: int):
         """Plays a number of games against MCTS without network to evaluate result."""
-        self.net.eval()
+        net = self.net
+        net.eval()
 
         az_agent = AlphaZeroAgent(
             game=self.config["game"],
             simulations=self.config["mcts"]["n_sims"],
             cpuct=self.config["mcts"]["cpuct"],
-            net=self.net,
+            net=net,
         )
         mcts_agent = MCTSAgent(
             simulations=self.config["mcts"]["n_sims"],
@@ -371,35 +507,27 @@ class AlphaZeroTrainer:
     # ============================
 
     def train_step(self, batch_records: list[dict]) -> dict:
-        """One optimizer step on a batch of replay records."""
+        """One optimizer step on a batch of replay records (vectorized state processing)."""
         self.net.train()
 
-        state_tensors = []
-        policy_targets = []
-        value_targets = []
+        # Vectorized state → tensor conversion
+        boards = np.stack([r["state"][0] for r in batch_records])  # (B, H, W)
+        players = np.array([r["state"][1] for r in batch_records])  # (B,)
+        current = (boards == players[:, None, None]).astype(np.float32)  # (B, H, W)
+        opponent = (boards == (1 - players)[:, None, None]).astype(np.float32)
+        x = np.stack([current, opponent], axis=1)  # (B, 2, H, W)
 
-        for record in batch_records:
-            state = record["state"]
-            policy_target = record["policy_target"]
-            value_target = record["value_target"]
+        states = torch.from_numpy(x).to(self.device)
+        policy_targets_tensor = torch.from_numpy(np.stack([r["policy_target"] for r in batch_records])).to(self.device)
+        value_targets_tensor = torch.tensor(
+            [r["value_target"] for r in batch_records], dtype=torch.float32, device=self.device
+        ).unsqueeze(1)
 
-            state_tensors.append(self.net.process_state(state))  # (1, C, H, W)
-            policy_targets.append(np.asarray(policy_target, dtype=np.float32))
-            value_targets.append(float(value_target))
-
-        states = torch.cat(state_tensors, dim=0).to(self.device)  # (B, C, H, W)
-        policy_targets_tensor = torch.from_numpy(np.stack(policy_targets, axis=0)).to(self.device)  # (B, A)
-        value_targets_tensor = torch.tensor(value_targets, dtype=torch.float32, device=self.device).unsqueeze(
-            1
-        )  # (B, 1)
-
-        policy_logits, value_predictions = self.net(states)  # logits: (B,A), values: (B,1)
+        policy_logits, value_predictions = self.net(states)
 
         log_policy = F.log_softmax(policy_logits, dim=1)
-        policy_loss = -(policy_targets_tensor * log_policy).sum(dim=1).mean()  # cross-entropy with soft targets
-
-        value_loss = F.mse_loss(value_predictions, value_targets_tensor)  # (z - v)^2
-
+        policy_loss = -(policy_targets_tensor * log_policy).sum(dim=1).mean()
+        value_loss = F.mse_loss(value_predictions, value_targets_tensor)
         total_loss = policy_loss + value_loss
 
         self.optimizer.zero_grad(set_to_none=True)
@@ -412,27 +540,136 @@ class AlphaZeroTrainer:
             "value_loss": float(value_loss.item()),
         }
 
-    def train(self):
-        """Full AlphaZero training loop."""
+    def self_play_parallel(self, n_games: int, num_workers: int, seed: int | None = None) -> list[dict]:
+        """Generate dataset via self-play using multiprocessing (CPU)."""
+        n_games = int(n_games)
+        num_workers = max(1, int(num_workers))
+        if n_games <= 0:
+            return []
+
+        # Snapshot weights once; workers load their own copy.
+        net = self.net
+        net_state_dict = {k: v.detach().cpu() for k, v in net.state_dict().items()}
+
+        base = n_games // num_workers
+        rem = n_games % num_workers
+        worker_games = [base + (1 if i < rem else 0) for i in range(num_workers)]
+        worker_games = [g for g in worker_games if g > 0]
+        num_workers = len(worker_games)
+
+        out_q: mp.SimpleQueue = mp.SimpleQueue()
+        procs: list[mp.Process] = []
+
+        for wid, ng in enumerate(worker_games):
+            p = mp.Process(
+                target=_self_play_worker,
+                args=(wid, ng, self.base_env, self.config, "cpu", net_state_dict, out_q, num_workers, seed),
+            )
+            p.daemon = False
+            p.start()
+            procs.append(p)
+
+        collected = []
+        for _ in tqdm(range(num_workers), desc="Self-play (mp)"):
+            status, wid, payload = out_q.get()
+            if status != "ok":
+                for p in procs:
+                    if p.is_alive():
+                        p.terminate()
+                for p in procs:
+                    p.join(timeout=1.0)
+                raise RuntimeError(f"Self-play worker {wid} failed:\n{payload}")
+            collected.extend(payload)
+
+        for p in procs:
+            p.join()
+
+        return collected
+
+    def test_vs_mcts_parallel(self, n_games: int, num_workers: int = 4, seed: int | None = 5678):
+        """Plays evaluation matches vs MCTS using multiprocessing."""
+        n_games = int(n_games)
+        num_workers = max(1, int(num_workers))
+        if n_games <= 0:
+            return {}
+
+        net = self.net
+        net_state_dict = {k: v.detach().cpu() for k, v in net.state_dict().items()}
+
+        base = n_games // num_workers
+        rem = n_games % num_workers
+        worker_games = [base + (1 if i < rem else 0) for i in range(num_workers)]
+        worker_games = [g for g in worker_games if g > 0]
+        num_workers = len(worker_games)
+
+        out_q: mp.SimpleQueue = mp.SimpleQueue()
+        procs: list[mp.Process] = []
+
+        for wid, ng in enumerate(worker_games):
+            p = mp.Process(
+                target=_eval_worker,
+                args=(wid, ng, self.base_env, self.config, "cpu", net_state_dict, out_q, num_workers, seed),
+            )
+            p.daemon = False
+            p.start()
+            procs.append(p)
+
+        totals = {}
+        total_games_done = 0
+
+        for _ in tqdm(range(num_workers), desc="Eval vs MCTS (mp)"):
+            status, wid, payload = out_q.get()
+            if status != "ok":
+                for p in procs:
+                    if p.is_alive():
+                        p.terminate()
+                for p in procs:
+                    p.join(timeout=1.0)
+                raise RuntimeError(f"Eval worker {wid} failed:\n{payload}")
+
+            winners = payload
+            for k, v in winners.items():
+                totals[k] = totals.get(k, 0) + int(v)
+            total_games_done += sum(int(v) for v in winners.values())
+
+        for p in procs:
+            p.join()
+
+        return {k: v / float(n_games) for k, v in totals.items()}
+
+    def train(self, start_iteration: int = 0):
+        """Full AlphaZero training loop.
+
+        Args:
+            start_iteration: Iteration index to resume from (0-based). Iterations before
+                this value are skipped; their metrics are expected to already be in self.metrics.
+        """
         iterations = int(self.config["training"]["iterations"])
         buffer_size = int(self.config["training"]["buffer_size"])
         games_per_iteration = int(self.config["training"]["games_per_iteration"])
         batch_size = int(self.config["training"]["batch_size"])
-
-        # TODO: check this value
         training_steps_per_iteration = int(self.config["training"].get("training_steps_per_iteration", 0))
 
         replay_buffer: deque[dict] = deque(maxlen=buffer_size)
 
-        for iteration_index in range(iterations):
+        num_self_play_workers = int(self.config["training"].get("n_play_workers", max(1, (os.cpu_count() or 2) // 2)))
+        num_eval_workers = int(self.config["eval"].get("n_workers", max(1, (os.cpu_count() or 2) // 2)))
+
+        if start_iteration > 0:
+            logger.info("Resuming from iteration %d (replay buffer starts empty).", start_iteration + 1)
+
+        for iteration_index in range(start_iteration, iterations):
             logger.info("========== Iteration %d/%d ==========", iteration_index + 1, iterations)
 
             # -------------------
             # Self-play collection
             # -------------------
-            new_records: list[dict] = []
-            for _ in tqdm(range(games_per_iteration), desc="Self-play"):
-                new_records.extend(self.self_play_game())
+            if num_self_play_workers > 1 and games_per_iteration > 1:
+                new_records = self.self_play_parallel(games_per_iteration, num_workers=num_self_play_workers)
+            else:
+                new_records = []
+                for _ in tqdm(range(games_per_iteration), desc="Self-play"):
+                    new_records.extend(self.self_play_game())
 
             new_records = self.augment_data(new_records)
             replay_buffer.extend(new_records)
@@ -444,15 +681,21 @@ class AlphaZeroTrainer:
             # -------------------
             # Network training
             # -------------------
-            if training_steps_per_iteration <= 0:
-                training_steps_per_iteration = max(1, len(replay_buffer) // batch_size)
+            steps = (
+                training_steps_per_iteration
+                if training_steps_per_iteration > 0
+                else max(1, len(replay_buffer) // batch_size)
+            )
+
+            # Snapshot buffer once to avoid repeated O(N) deque→list conversion
+            buffer_list = list(replay_buffer)
 
             losses_total = []
             losses_policy = []
             losses_value = []
 
-            for _ in tqdm(range(training_steps_per_iteration), desc="Training"):
-                batch_records = random.sample(list(replay_buffer), batch_size)
+            for _ in tqdm(range(steps), desc="Training"):
+                batch_records = random.sample(buffer_list, batch_size)
                 loss_dict = self.train_step(batch_records)
                 losses_total.append(loss_dict["total_loss"])
                 losses_policy.append(loss_dict["policy_loss"])
@@ -479,7 +722,12 @@ class AlphaZeroTrainer:
                 )
 
             if self.config["eval"]["play_vs_mcts"]:
-                match_metrics = self.test_vs_mcts(self.config["eval"]["n_matches"])
+                if num_eval_workers > 1 and int(self.config["eval"]["n_matches"]) > 1:
+                    match_metrics = self.test_vs_mcts_parallel(
+                        self.config["eval"]["n_matches"], num_workers=num_eval_workers
+                    )
+                else:
+                    match_metrics = self.test_vs_mcts(self.config["eval"]["n_matches"])
             else:
                 match_metrics = {}
 
@@ -501,50 +749,106 @@ class AlphaZeroTrainer:
             self.save_plot_metrics()
 
 
+def _make_env(game: str) -> GenericEnv:
+    """Instantiate a game environment by name."""
+    if game.lower() == "tris":
+        from giotto.envs.tris import TrisEnv
+
+        return TrisEnv()
+    elif game.lower() == "connect4":
+        from giotto.envs.connect4 import Connect4Env
+
+        return Connect4Env()
+    else:
+        raise ValueError(f"{game!r} is not a valid game. Choose 'tris' or 'connect4'.")
+
+
 if __name__ == "__main__":
     import argparse
 
+    with contextlib.suppress(RuntimeError):
+        mp.set_start_method("spawn", force=True)
+
     parser = argparse.ArgumentParser(description="AlphaZero Net training")
-    parser.add_argument("-g", "--game", help="game to play [tris, connect4]", required=True)
+    parser.add_argument("-g", "--game", help="game to play [tris, connect4]", required=False)
     parser.add_argument("-c", "--config", help="path to config yaml file", required=False)
+    parser.add_argument(
+        "--resume",
+        help="path to a previous log directory to resume training from",
+        required=False,
+    )
     args = vars(parser.parse_args())
 
-    if args["game"].lower() == "tris":
-        from giotto.envs.tris import TrisEnv
+    start_iteration = 0
 
-        env = TrisEnv()
-        with open("config_tris.yaml") as f:
-            config = yaml.safe_load(f)
-    elif args["game"].lower() == "connect4":
-        from giotto.envs.connect4 import Connect4Env
+    if args["resume"]:
+        resume_dir = Path(args["resume"]).resolve()
+        if not resume_dir.is_dir():
+            raise FileNotFoundError(f"Resume directory not found: {resume_dir}")
 
-        env = Connect4Env()
-        with open("config_c4.yaml") as f:
+        config_path = resume_dir / "config.yaml"
+        if not config_path.exists():
+            raise FileNotFoundError(f"No config.yaml found in resume directory: {resume_dir}")
+
+        with open(config_path) as f:
             config = yaml.safe_load(f)
+
+        game_name = config.get("game", args.get("game"))
+        if not game_name:
+            raise ValueError("Could not determine game from config. Provide --game explicitly.")
+        env = _make_env(game_name)
+
+        # Find the latest checkpoint in the resume directory
+        checkpoints = sorted(
+            resume_dir.glob("checkpoint_iter_*.pt"),
+            key=lambda p: int(p.stem.rsplit("_", 1)[-1]),
+        )
+        if not checkpoints:
+            raise FileNotFoundError(f"No checkpoints found in {resume_dir}. Nothing to resume.")
+
+        latest_checkpoint = checkpoints[-1]
+        start_iteration = int(latest_checkpoint.stem.rsplit("_", 1)[-1])
+        logger.info("Resuming from %s (iteration %d)", latest_checkpoint.name, start_iteration)
+
+        LOGS_DIR = resume_dir
+
     else:
-        raise ValueError(f"{args['game']} not a valid game")
+        if not args["game"]:
+            parser.error("--game is required when not using --resume")
 
-    if args["config"]:
-        try:
-            with open(args["config"]) as f:
-                config = yaml.safe_load(f)
-        except Exception as e:
-            raise FileExistsError(f"Failed to load config file. {e}")  # noqa: B904
+        game_name = args["game"]
+        env = _make_env(game_name)
 
-    LOGS_DIR = (
-        Path(__file__).parent
-        / ".."
-        / ".."
-        / ".."
-        / ".."
-        / "logs"
-        / "alphazero"
-        / args["game"]
-        / datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-    )
-    os.makedirs(LOGS_DIR)
+        default_config_name = "config_tris.yaml" if game_name.lower() == "tris" else "config_c4.yaml"
+        with open(Path(__file__).parent / default_config_name) as f:
+            config = yaml.safe_load(f)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+        if args["config"]:
+            try:
+                with open(args["config"]) as f:
+                    config = yaml.safe_load(f)
+            except Exception as e:
+                raise FileExistsError(f"Failed to load config file. {e}")  # noqa: B904
+
+        LOGS_DIR = (
+            Path(__file__).parent
+            / ".."
+            / ".."
+            / ".."
+            / ".."
+            / "logs"
+            / "alphazero"
+            / game_name
+            / datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+        )
+        os.makedirs(LOGS_DIR)
+
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
 
     trainer = AlphaZeroTrainer(
         env=env,
@@ -553,4 +857,8 @@ if __name__ == "__main__":
         device=device,
     )
 
-    trainer.train()
+    if args["resume"]:
+        trainer.load_model(latest_checkpoint.name)
+        trainer.load_metrics()
+
+    trainer.train(start_iteration=start_iteration)

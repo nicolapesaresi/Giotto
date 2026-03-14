@@ -169,3 +169,4 @@ logs/
 .vscode/
 *.jsonl
 .DS_Store
+CLAUDE.md

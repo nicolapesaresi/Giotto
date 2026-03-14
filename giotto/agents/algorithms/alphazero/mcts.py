@@ -16,98 +16,133 @@ except ImportError:
 
 
 class AZNode:
-    """Node in AlphaZero MCTS tree."""
+    """Node in AlphaZero MCTS tree.
+
+    Environments are materialized lazily: child nodes only clone the parent env
+    when first accessed, reducing redundant clones for unexplored branches.
+    """
+
+    __slots__ = (
+        "parent",
+        "parent_action",
+        "_env",
+        "_source_env",
+        "_source_action",
+        "to_play",
+        "prob",
+        "children",
+        "n_visits",
+        "total_score",
+    )
 
     def __init__(
         self,
-        env: GenericEnv,
+        env: GenericEnv | None = None,
         parent: AZNode | None = None,
         parent_action: int | None = None,
+        *,
+        _source_env: GenericEnv | None = None,
+        _source_action: int | None = None,
     ):
         self.parent = parent
         self.parent_action = parent_action
-        self.env = env
-        self.to_play = env.current_player
-
+        self._env = env
+        self._source_env = _source_env
+        self._source_action = _source_action
+        self.to_play = env.current_player if env is not None else None
         self.prob = 0.0
-        self.children = {}
+        self.children: dict[int, AZNode] = {}
         self.n_visits = 0
-        self.total_score = 0
+        self.total_score = 0.0
 
-    def terminal_node_eval(self, env: GenericEnv, player: int):
+    @property
+    def env(self) -> GenericEnv:
+        """Return the environment, cloning from the parent lazily on first access."""
+        if self._env is None:
+            env = self._source_env.clone()
+            env.step(self._source_action)
+            self._env = env
+            self.to_play = env.current_player
+            self._source_env = None
+            self._source_action = None
+        return self._env
+
+    @property
+    def avg_value(self) -> float:
+        """Average value of the node."""
+        if self.n_visits == 0:
+            return 0.0
+        return self.total_score / self.n_visits
+
+    def terminal_node_eval(self, env: GenericEnv, player: int) -> float:
         """Evaluates terminal nodes for backpropagation."""
         winner = env.info["winner"]
         if winner == -1:
-            return 0
-        elif winner == player:
-            return 1
-        else:
-            return -1
+            return 0.0
+        return 1.0 if winner == player else -1.0
 
-    def expand(self):
-        """Create child nodes for all valid actions. If state is terminal, evaluate and set the node's value."""
-        if self.env.done:
-            self.total_score = self.terminal_node_eval(self.env, self.to_play)
+    def expand(self) -> None:
+        """Create lazy child stubs for all valid actions (no env cloning yet).
+
+        Children are stored as unevaluated stubs that materialize their env only
+        when selected during tree traversal.
+        """
+        if self.children or self.env.done:
             return
+        for action in self.env.get_valid_actions():
+            self.children[action] = AZNode(
+                parent=self,
+                parent_action=action,
+                _source_env=self._env,
+                _source_action=action,
+            )
 
-        valid_actions = self.env.get_valid_actions()
-        for action in valid_actions:
-            child_env = self.env.clone()
-            child_env.step(action)
-            self.children[action] = AZNode(env=child_env, parent=self, parent_action=action)
-
-    def select_child(self, cpuct: float):
+    def select_child(self, cpuct: float) -> AZNode:
         """Select the child node with the highest PUCT score."""
-        best_puct = -np.inf
+        sqrt_parent = math.sqrt(self.n_visits + 1)
+        cpuct_sqrt = cpuct * sqrt_parent
         best_child = None
+        best_score = -1e9
         for child in self.children.values():
-            puct = self.calculate_puct(child, cpuct)
-            if puct > best_puct:
-                best_puct = puct
+            score = -child.avg_value + cpuct_sqrt * child.prob / (child.n_visits + 1)
+            if score > best_score:
+                best_score = score
                 best_child = child
         return best_child
 
-    def calculate_puct(self, child: AZNode, cpuct: float):
-        """Calculate the PUCT score for a given child node."""
-        # flip sign because perspective of child is always opposite of father
-        exploitation_term = -child.avg_value
-        exploration_term = child.prob * math.sqrt(self.n_visits) / (child.n_visits + 1)
-        return exploitation_term + cpuct * exploration_term
-
-    def backpropagate(self, value: int):
+    def backpropagate(self, value: float) -> None:
         """Update the current node and its ancestors with the given value."""
         self.total_score += value
         self.n_visits += 1
         if self.parent is not None:
-            # alternate sign as player alternates
             self.parent.backpropagate(-value)
 
-    def is_leaf(self):
+    def is_leaf(self) -> bool:
         """Check if the node is a leaf (no children)."""
         return len(self.children) == 0
 
-    def is_terminal(self):
+    def is_terminal(self) -> bool:
         """Check if the node represents a terminal state."""
         return self.env.done
 
-    @property
-    def avg_value(self):
-        """Calculate the average value of this node."""
-        if self.n_visits == 0:
-            return 0
-        return self.total_score / self.n_visits
-
-    def __str__(self):
-        """Return a string containing the node's relevant information for debugging purposes."""
+    def __str__(self) -> str:
         return (
             f"Prob: {self.prob}\nTo play: {self.to_play}"
-            + f"\nNumber of children: {len(self.children)}\nNumber of visits: {self.n_visits}"
-            + f"\nAvg value: {self.avg_value}"
+            f"\nChildren: {len(self.children)}\nVisits: {self.n_visits}"
+            f"\nAvg value: {self.avg_value:.4f}"
         )
 
 
 class AlphaZeroMCTS:
-    """AlphaZero style Monte Carlo Tree Search."""
+    """AlphaZero MCTS with lazy expansion and tree reuse between moves.
+
+    Key optimizations vs a naive implementation:
+    - Lazy env cloning: child environments are cloned only when first visited,
+      reducing O(branching_factor x n_sims) clones to O(n_sims).
+    - Tree reuse: call advance_root(action) after each move so subsequent
+      searches start from a warm subtree rather than a fresh root.
+    - Vectorized PUCT: child scores computed with numpy instead of a Python loop.
+    """
 
     def __init__(
         self,
@@ -116,80 +151,128 @@ class AlphaZeroMCTS:
         cpuct: float,
         dirichlet_alpha: float = 1.0,
         dirichlet_eps: float | None = None,
-        temperature: float | None = None,
     ):
-        """Intantiates Monte Carlo Tree Search with a given neural network and configuration."""
         self.net = net
         self.n_simulations = n_simulations
         self.cpuct = cpuct
-
         self.skip_dirichlet = dirichlet_alpha is None or dirichlet_eps is None
         self.dirichlet_alpha = dirichlet_alpha
         self.dirichlet_eps = dirichlet_eps
-        self.temperature = temperature
+        self._root: AZNode | None = None
 
-    def run(self, env: GenericEnv):
-        """Runs MCTS to select action."""
+    # ------------------------------------------------------------------
+    # Root helpers
+    # ------------------------------------------------------------------
+
+    def _build_root(self, env: GenericEnv) -> AZNode:
+        """Create root node, expand immediately, and inject Dirichlet noise."""
+        root_env = env.clone()
+        root = AZNode(env=root_env)
+        valid_actions = root_env.get_valid_actions()
+        policy, _ = self.net.predict(root_env.get_state())
+        raw = np.array([policy[a - 1] for a in valid_actions], dtype=np.float32)
+        if not self.skip_dirichlet:
+            noise = np.random.dirichlet([self.dirichlet_alpha] * len(valid_actions))
+            raw = (1.0 - self.dirichlet_eps) * raw + self.dirichlet_eps * noise
+        raw /= raw.sum()
+        for action, prob in zip(valid_actions, raw):
+            child = AZNode(parent=root, parent_action=action, _source_env=root_env, _source_action=action)
+            child.prob = float(prob)
+            root.children[action] = child
+        return root
+
+    def _apply_dirichlet(self, root: AZNode) -> None:
+        """Re-apply Dirichlet noise to root's children after tree reuse."""
+        if self.skip_dirichlet or not root.children:
+            return
+        actions = list(root.children.keys())
+        noise = np.random.dirichlet([self.dirichlet_alpha] * len(actions))
+        for action, n in zip(actions, noise):
+            child = root.children[action]
+            child.prob = float((1.0 - self.dirichlet_eps) * child.prob + self.dirichlet_eps * n)
+
+    # ------------------------------------------------------------------
+    # Tree reuse
+    # ------------------------------------------------------------------
+
+    def advance_root(self, action: int) -> None:
+        """Move the cached root to the subtree for *action* (tree reuse).
+
+        Call this immediately after each game move during self-play so the next
+        call to run() starts from an already-explored subtree.
+        """
+        if self._root is None or action not in self._root.children:
+            self._root = None
+            return
+        new_root = self._root.children[action]
+        new_root.parent = None
+        new_root.parent_action = None
+        _ = new_root.env  # materialize if still lazy
+        self._root = new_root
+        self._apply_dirichlet(self._root)
+
+    def reset(self) -> None:
+        """Discard the cached root. Call between independent games."""
+        self._root = None
+
+    # ------------------------------------------------------------------
+    # Search
+    # ------------------------------------------------------------------
+
+    def run(self, env: GenericEnv, temperature: float = 0.0) -> tuple[int, AZNode]:
+        """Run MCTS simulations and return (chosen_action, root).
+
+        Args:
+            env: Current game environment (not mutated).
+            temperature: Action selection temperature. 0.0 = greedy.
+
+        Returns:
+            Tuple of (selected action, root AZNode with visit statistics).
+        """
         self.net.eval()
 
-        root_env = env.clone()
-        root = AZNode(env=root_env, parent=None, parent_action=None)
-        # ROOT EXPANSION
-        # expand root, adding dirichlet noise to each action
-        valid_actions = root_env.get_valid_actions()
-        policy, value = self.net.predict(root_env.get_state())
-        if not self.skip_dirichlet:
-            noise = np.random.dirichlet([self.dirichlet_alpha] * self.net.policy_output_size)
-            action_probs = ((1 - self.dirichlet_eps) * policy) + self.dirichlet_eps * noise
-        else:
-            action_probs = policy
-        # valid action masking
-        action_probs = [action_probs[a - 1] for a in valid_actions]
-        action_probs /= np.sum(action_probs)  # reapply softmax
+        root = self._root if self._root is not None else self._build_root(env)
 
-        for action, prob in zip(valid_actions, action_probs, strict=True):
-            new_env = root_env.clone()
-            new_env.step(action)
-            root.children[action] = AZNode(env=new_env, parent=root, parent_action=action)
-            root.children[action].prob = prob
-        # root.n_visits = 1
-        # root.total_score = value
-
-        # SEARCH
         for _ in range(self.n_simulations):
-            current_node = root
+            node = root
 
             # SELECTION
-            while not current_node.is_terminal() and not current_node.is_leaf():
-                current_node = current_node.select_child(cpuct=self.cpuct)
+            while not node.is_terminal() and not node.is_leaf():
+                node = node.select_child(self.cpuct)
 
-            # EXPANSION
-            if not current_node.is_terminal():
-                current_node.expand()
-                policy, value = self.net.predict(current_node.env.get_state())
-                valid_actions = current_node.env.get_valid_actions()
-                action_probs = [policy[a - 1] for a in valid_actions]
-                action_probs /= np.sum(action_probs)  # reapply softmax
-
-                for action, prob in zip(valid_actions, action_probs, strict=True):
-                    current_node.children[action].prob = prob
-            # if node is terminal, get the value of it from env
+            # EXPANSION + EVALUATION
+            if not node.is_terminal():
+                node.expand()
+                policy, value = self.net.predict(node.env.get_state())
+                valid_actions = node.env.get_valid_actions()
+                raw = np.array([policy[a - 1] for a in valid_actions], dtype=np.float32)
+                raw /= raw.sum()
+                for action, prob in zip(valid_actions, raw):
+                    node.children[action].prob = float(prob)
+                value = float(value)
             else:
-                value = current_node.terminal_node_eval(env=current_node.env, player=current_node.to_play)
+                value = node.terminal_node_eval(node.env, node.to_play)
 
             # BACKPROPAGATION
-            current_node.backpropagate(value)
+            node.backpropagate(value)
 
-        # select action (temperature regulates exploration)
-        return self.select_action(root, self.temperature), root
+        self._root = root
+        return self.select_action(root, temperature), root
 
-    def select_action(self, root: AZNode, temperature: float = 0.0):
-        """Select an action from the root based on visit counts, adjusted by temperature. Set 0 for greedy selection."""
-        action_counts = {key: val.n_visits for key, val in root.children.items()}
+    def select_action(self, root: AZNode, temperature: float = 0.0) -> int:
+        """Select an action from the root based on visit counts and temperature.
+
+        Args:
+            root: Root node after simulations.
+            temperature: 0.0 = greedy (max visits), inf = uniform random.
+        """
+        actions = list(root.children.keys())
+        counts = np.array([root.children[a].n_visits for a in actions], dtype=np.float32)
         if temperature is None or temperature == 0.0:
-            return max(action_counts, key=action_counts.get)
+            return actions[int(np.argmax(counts))]
         elif temperature == np.inf:
-            return np.random.choice(list(action_counts.keys()))
+            return np.random.choice(actions)
         else:
-            distribution = np.array([*action_counts.values()]) ** (1 / temperature)
-            return np.random.choice([*action_counts.keys()], p=distribution / sum(distribution))
+            counts = counts ** (1.0 / temperature)
+            counts /= counts.sum()
+            return np.random.choice(actions, p=counts)

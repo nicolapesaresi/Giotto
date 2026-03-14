@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
@@ -10,22 +8,22 @@ from giotto.utils.simmetries import EquivalentBoards
 class Connect4Env(GenericEnv):
     """Connect4 environment."""
 
+    simmetries = EquivalentBoards(
+        rotate90=False,
+        rotate180=False,
+        rotate270=False,
+        reflect_horizontal=False,
+        reflect_vertical=True,
+        reflect_diag_nw_se=False,
+        reflect_diag_ne_sw=False,
+    )
+
     def __init__(self):
         """Instantiates environment."""
         signs = ["o", "x", -1]  # third is empty place, accessed with -1
         rows = 6
         cols = 7
         super().__init__(signs, rows, cols)
-        self.simmetries = EquivalentBoards(
-            rotate90=False,
-            rotate180=False,
-            rotate270=False,
-            reflect_horizontal=False,
-            reflect_vertical=True,
-            reflect_diag_nw_se=False,
-            reflect_diag_ne_sw=False,
-        )
-
         self.reset()
 
     def check_win(self, player_idx: int) -> bool:
@@ -103,10 +101,16 @@ class Connect4Env(GenericEnv):
 
     def clone(self):
         """Returns a copy of the env."""
-        new_env = Connect4Env()
+        new_env = object.__new__(Connect4Env)
+        new_env.signs = self.signs
+        new_env.rows = self.rows
+        new_env.cols = self.cols
         new_env.board = self.board.copy()
         new_env.current_player = self.current_player
         new_env.turn_counter = self.turn_counter
         new_env.done = self.done
-        new_env.info = deepcopy(self.info)
+        info = {"moves": self.info["moves"].copy()}
+        if "winner" in self.info:
+            info["winner"] = self.info["winner"]
+        new_env.info = info
         return new_env

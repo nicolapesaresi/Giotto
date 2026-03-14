@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import numpy as np
 
 from giotto.envs.generic import GenericEnv
@@ -9,22 +7,22 @@ from giotto.utils.simmetries import EquivalentBoards
 class TrisEnv(GenericEnv):
     """Tic Tac Toe environment."""
 
+    simmetries = EquivalentBoards(
+        rotate90=True,
+        rotate180=True,
+        rotate270=True,
+        reflect_horizontal=True,
+        reflect_vertical=True,
+        reflect_diag_nw_se=True,
+        reflect_diag_ne_sw=True,
+    )
+
     def __init__(self):
         """Instantiates environment."""
         signs = ["o", "x", " "]  # third is empty place, accessed with -1
         rows = 3
         cols = 3
         super().__init__(signs, rows, cols)
-        self.simmetries = EquivalentBoards(
-            rotate90=True,
-            rotate180=True,
-            rotate270=True,
-            reflect_horizontal=True,
-            reflect_vertical=True,
-            reflect_diag_nw_se=True,
-            reflect_diag_ne_sw=True,
-        )
-
         self.reset()
 
     def check_win(self, player_idx: int) -> bool:
@@ -88,10 +86,16 @@ class TrisEnv(GenericEnv):
 
     def clone(self):
         """Returns a copy of the env."""
-        new_env = TrisEnv()
+        new_env = object.__new__(TrisEnv)
+        new_env.signs = self.signs
+        new_env.rows = self.rows
+        new_env.cols = self.cols
         new_env.board = self.board.copy()
         new_env.current_player = self.current_player
         new_env.turn_counter = self.turn_counter
         new_env.done = self.done
-        new_env.info = deepcopy(self.info)
+        info = {"moves": self.info["moves"].copy()}
+        if "winner" in self.info:
+            info["winner"] = self.info["winner"]
+        new_env.info = info
         return new_env

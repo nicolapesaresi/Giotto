@@ -19,13 +19,13 @@ network:
   residual_blocks: 10 # number of residual blocks
   channels: 128 # planes in shared trunk residual blocks
 training:
-  iterations: 30
-  games_per_iteration: 50
-  batch_size: 32
-  buffer_size: 30000
-  learning_rate: 0.02
+  iterations: 50
+  games_per_iteration: 200
+  batch_size: 128
+  buffer_size: 100000
+  learning_rate: 0.001
 mcts:
-  n_sims: 400
+  n_sims: 800
   cpuct: 3.5 # exploration factor
   dirichlet_alpha: 1.0 # parameter of dirichlet distribution
   dirichlet_epsilon: 0.25 # impact of noise on priors
