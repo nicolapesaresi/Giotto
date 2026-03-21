@@ -35,6 +35,7 @@ mcts:
   # This encourages exploration at beginning of branches and exploitation in endgames.
   temperature: 1.0 # adds noise on decision [0.0 equals greedy]
   temperature_schedule: 20 # move at which temperature is dropped to greedy
+  batch_size: 8 # leaves collected per batched NN call (1 = sequential, original behaviour)
 eval:
   run_eval: true
   eval_dataset: ../../../../eval_datasets/connect4_positions.jsonl

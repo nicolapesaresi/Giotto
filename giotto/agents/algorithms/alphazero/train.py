@@ -64,19 +64,24 @@ def _run_self_play_game(
     move_count = 0
     episode_records = []
 
+    mcts_batch_size = config["mcts"].get("batch_size", 1)
     mcts = AlphaZeroMCTS(
         net,
         n_simulations=config["mcts"]["n_sims"],
         cpuct=config["mcts"]["cpuct"],
         dirichlet_alpha=config["mcts"]["dirichlet_alpha"],
         dirichlet_eps=config["mcts"]["dirichlet_epsilon"],
+        batch_size=mcts_batch_size,
     )
 
     while not env.done:
         schedule = config["mcts"]["temperature_schedule"]
         temperature = config["mcts"]["temperature"] if move_count < schedule else 0.0
 
-        action, root = mcts.run(env, temperature=temperature)
+        if mcts_batch_size > 1:
+            action, root = mcts.run_batched(env, temperature=temperature)
+        else:
+            action, root = mcts.run(env, temperature=temperature)
 
         # Build policy target from root visit counts
         visit_counts = np.zeros(net.policy_output_size, dtype=np.float32)

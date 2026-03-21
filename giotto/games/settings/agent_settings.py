@@ -16,8 +16,8 @@ class PlayerType(Enum):
     RANDOM = "Random"
     MINIMAX = "Minimax"
     MCTS = "MCTS"
-    GIOTTO_TRIS = "Giotto"
-    GIOTTO_C4 = "Giottone"
+    GIOTTO_TRIS = "Giottino"
+    GIOTTO_C4 = "Giotto"
 
 
 PLAYER_ORDER = [

@@ -57,6 +57,8 @@ class AlphaZeroNet(nn.Module):
         # Cached device and pre-allocated inference buffer (avoids per-call overhead)
         self._device = torch.device("cpu")
         self._np_buf = np.zeros((input_size[0], input_size[1], input_size[2]), dtype=np.float32)
+        self._batch_buf: np.ndarray | None = None
+        self._max_batch_size: int = 0
 
         # initial convolution
         self.conv = nn.Conv2d(self.input_size[0], self.channels, 3, padding=1, bias=False)
@@ -138,14 +140,24 @@ class AlphaZeroNet(nn.Module):
     def batch_predict(self, states: list[list[np.ndarray, int]]) -> tuple[np.ndarray, np.ndarray]:
         """Predict (policy_probs, values) for a batch of states as numpy arrays.
 
+        Uses a pre-allocated buffer to avoid repeated allocations across calls.
+
         Args:
             states: List of [board, player_id] states.
 
         Returns:
             Tuple of (policies, values) with shapes (B, A) and (B,).
         """
-        tensors = [self.process_state(s) for s in states]
-        batch = torch.cat(tensors, dim=0).to(self._device)
+        B = len(states)
+        if self._batch_buf is None or self._max_batch_size < B:
+            c, h, w = self.input_size
+            self._batch_buf = np.zeros((B, c, h, w), dtype=np.float32)
+            self._max_batch_size = B
+        buf = self._batch_buf[:B]
+        for i, (board, player_id) in enumerate(states):
+            buf[i, 0] = board == player_id
+            buf[i, 1] = board == (1 - player_id)
+        batch = torch.from_numpy(buf).to(self._device)
 
         with torch.inference_mode():
             policy_logits, value_tensor = self.forward(batch)

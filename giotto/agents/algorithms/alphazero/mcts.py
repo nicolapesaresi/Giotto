@@ -110,6 +110,18 @@ class AZNode:
                 best_child = child
         return best_child
 
+    def apply_virtual_loss(self) -> None:
+        """Increment visit count up to root to discourage parallel re-selection."""
+        self.n_visits += 1
+        if self.parent is not None:
+            self.parent.apply_virtual_loss()
+
+    def revert_virtual_loss(self) -> None:
+        """Undo the virtual loss increments applied by apply_virtual_loss."""
+        self.n_visits -= 1
+        if self.parent is not None:
+            self.parent.revert_virtual_loss()
+
     def backpropagate(self, value: float) -> None:
         """Update the current node and its ancestors with the given value."""
         self.total_score += value
@@ -151,6 +163,7 @@ class AlphaZeroMCTS:
         cpuct: float,
         dirichlet_alpha: float = 1.0,
         dirichlet_eps: float | None = None,
+        batch_size: int = 1,
     ):
         self.net = net
         self.n_simulations = n_simulations
@@ -158,6 +171,7 @@ class AlphaZeroMCTS:
         self.skip_dirichlet = dirichlet_alpha is None or dirichlet_eps is None
         self.dirichlet_alpha = dirichlet_alpha
         self.dirichlet_eps = dirichlet_eps
+        self.batch_size = batch_size
         self._root: AZNode | None = None
 
     # ------------------------------------------------------------------
@@ -255,6 +269,68 @@ class AlphaZeroMCTS:
 
             # BACKPROPAGATION
             node.backpropagate(value)
+
+        self._root = root
+        return self.select_action(root, temperature), root
+
+    def run_batched(self, env: GenericEnv, temperature: float = 0.0) -> tuple[int, AZNode]:
+        """Run MCTS simulations with leaf parallelism (batched NN calls).
+
+        Collects up to batch_size leaves per forward pass, applying virtual loss
+        during selection to discourage duplicate paths. Reduces NN calls from
+        n_simulations to roughly n_simulations / batch_size.
+
+        Args:
+            env: Current game environment (not mutated).
+            temperature: Action selection temperature. 0.0 = greedy.
+
+        Returns:
+            Tuple of (selected action, root AZNode with visit statistics).
+        """
+        self.net.eval()
+
+        root = self._root if self._root is not None else self._build_root(env)
+
+        sims_done = 0
+        while sims_done < self.n_simulations:
+            to_collect = min(self.batch_size, self.n_simulations - sims_done)
+            batch_leaves: list[AZNode] = []
+
+            # SELECTION: collect up to batch_size leaves with virtual loss
+            for _ in range(to_collect):
+                node = root
+                while not node.is_terminal() and not node.is_leaf():
+                    node = node.select_child(self.cpuct)
+                node.apply_virtual_loss()
+                batch_leaves.append(node)
+
+            # Revert all virtual losses before backpropagation
+            for node in batch_leaves:
+                node.revert_virtual_loss()
+
+            # EXPANSION + EVALUATION
+            non_terminal: list[AZNode] = []
+            non_terminal_states: list = []
+            for node in batch_leaves:
+                if node.is_terminal():
+                    value = node.terminal_node_eval(node.env, node.to_play)
+                    node.backpropagate(value)
+                else:
+                    node.expand()
+                    non_terminal.append(node)
+                    non_terminal_states.append(node.env.get_state())
+
+            if non_terminal:
+                policies, values = self.net.batch_predict(non_terminal_states)
+                for node, policy, value in zip(non_terminal, policies, values):
+                    valid_actions = node.env.get_valid_actions()
+                    raw = np.array([policy[a - 1] for a in valid_actions], dtype=np.float32)
+                    raw /= raw.sum()
+                    for action, prob in zip(valid_actions, raw):
+                        node.children[action].prob = float(prob)
+                    node.backpropagate(float(value))
+
+            sims_done += len(batch_leaves)
 
         self._root = root
         return self.select_action(root, temperature), root

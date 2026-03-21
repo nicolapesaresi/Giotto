@@ -41,7 +41,7 @@ class AlphaZeroAgent(GenericAgent):
                 )
             elif game.lower() == "connect4":
                 self.net = AlphaZeroNet(
-                    input_size=[2, 7, 6], value_output_size=1, policy_output_size=7, channels=128, residual_blocks=10
+                    input_size=[2, 6, 7], value_output_size=1, policy_output_size=7, channels=128, residual_blocks=10
                 )
             else:
                 raise ValueError(f"Game {game} not supported.")
