@@ -6,11 +6,11 @@ python ./giotto/scripts/play_game.py -g connect4 -o random
 import argparse
 
 from giotto.agents.alphazero import AlphaZeroAgent
-from giotto.agents.giotto import GiottoAgent
 from giotto.agents.human import HumanAgent
 from giotto.agents.mcts import MCTSAgent
 from giotto.agents.minimax import MinimaxAgent
 from giotto.agents.random import RandomAgent
+from giotto.agents.value_net_agent import ValueNetAgent
 from giotto.envs.connect4 import Connect4Env
 from giotto.envs.tris import TrisEnv
 from giotto.utils.text_play import play_game
@@ -43,8 +43,8 @@ if __name__ == "__main__":
         opp = MCTSAgent()
     elif args["opp"].lower() == "minimax":
         opp = MinimaxAgent()
-    elif args["opp"].lower() == "giotto":
-        opp = GiottoAgent(simulations=100, game=args["game"])
+    elif args["opp"].lower() == "valuenet":
+        opp = ValueNetAgent(simulations=100, game=args["game"])
     elif args["opp"].lower() == "alphazero":
         opp = AlphaZeroAgent(simulations=400, game=args["game"])
     else:

@@ -86,6 +86,23 @@ class PygameTris(GenericGame):
                 moves.add(XOSprite(sign, cell, settings_module=settings))
         moves.draw(self.screen)
 
+        # winning line
+        winner = self.env.info.get("winner")
+        if self.env.done and winner not in (None, -1):
+            winning_cells = self.env.get_winning_cells(winner)
+            if winning_cells:
+                color = (255, 220, 0)
+
+                def _center(row, col):
+                    return (
+                        settings.GRID_X0 + col * settings.CELL_WIDTH + settings.CELL_WIDTH // 2,
+                        settings.GRID_Y0 + row * settings.CELL_HEIGHT + settings.CELL_HEIGHT // 2,
+                    )
+
+                start = _center(*winning_cells[0])
+                end = _center(*winning_cells[-1])
+                pygame.draw.line(self.screen, color, start, end, 5)
+
     def draw_text(self):
         """Draws game texts on the screen."""
         texts = Group()

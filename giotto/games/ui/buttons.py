@@ -125,3 +125,32 @@ class PlayerSelectButton(Button):
         idx = order.index(self.player_type)
         self.player_type = order[(idx + 1) % len(order)]
         self.set_text(self._label())
+
+    def set_player_type(self, player_type):
+        """Sets player type directly and updates label.
+
+        Args:
+            player_type: player type to set.
+        """
+        self.player_type = player_type
+        self.set_text(self._label())
+
+
+class SwapButton(Button):
+    """Small button to swap X and O player selections."""
+
+    def __init__(self, pos, settings_module=None):
+        """Instantiates swap button.
+
+        Args:
+            pos: center position of the button.
+            settings_module: settings module for the game.
+        """
+        super().__init__(
+            text="swap",
+            pos=pos,
+            size=(settings_global.WIDTH * 0.1, settings_global.HEIGHT * 0.055),
+            bg_color=(60, 60, 100),
+            text_color=(200, 200, 255),
+            settings_module=settings_module,
+        )

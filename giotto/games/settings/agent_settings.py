@@ -33,7 +33,7 @@ AGENT_CLASS_MAP = {
     PlayerType.HUMAN: HumanAgent,
     PlayerType.RANDOM: RandomAgent,
     PlayerType.MINIMAX: MinimaxAgent,
-    PlayerType.MCTS: lambda: MCTSAgent(simulations=1000, cpuct=1.4),
-    PlayerType.GIOTTO_TRIS: lambda: AlphaZeroAgent(game="tris", simulations=100, cpuct=1.5),
-    PlayerType.GIOTTO_C4: lambda: AlphaZeroAgent(game="connect4", simulations=800, cpuct=3.5),
+    PlayerType.MCTS: lambda: MCTSAgent(simulations=800, cpuct=3.5),
+    PlayerType.GIOTTO_TRIS: lambda: AlphaZeroAgent(name="Giottino", game="tris", simulations=100, cpuct=1.5),
+    PlayerType.GIOTTO_C4: lambda: AlphaZeroAgent(name="Giotto", game="connect4", simulations=800, cpuct=3.5),
 }

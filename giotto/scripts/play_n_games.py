@@ -7,11 +7,11 @@ import argparse
 
 from giotto.agents.alphazero import AlphaZeroAgent
 from giotto.agents.bitbully import BitBullyAgent
-from giotto.agents.giotto import GiottoAgent
 from giotto.agents.human import HumanAgent
 from giotto.agents.mcts import MCTSAgent
 from giotto.agents.minimax import MinimaxAgent
 from giotto.agents.random import RandomAgent
+from giotto.agents.value_net_agent import ValueNetAgent
 from giotto.envs.connect4 import Connect4Env
 from giotto.envs.tris import TrisEnv
 from giotto.utils.text_play import play_n_games
@@ -57,8 +57,8 @@ if __name__ == "__main__":
         player = MCTSAgent()
     elif args["player"].lower() == "minimax":
         player = MinimaxAgent()
-    elif args["player"].lower() == "giotto":
-        player = GiottoAgent(game=args["game"])
+    elif args["player"].lower() == "valuenet":
+        player = ValueNetAgent(game=args["game"])
     elif args["player"].lower() == "alphazero":
         player = AlphaZeroAgent(simulations=800, cpuct=3.5, game=args["game"])
     elif args["player"].lower() == "bitbully":
@@ -75,8 +75,8 @@ if __name__ == "__main__":
         opp = MCTSAgent(simulations=800, cpuct=3.5)
     elif args["opp"].lower() == "minimax":
         opp = MinimaxAgent()
-    elif args["opp"].lower() == "giotto":
-        opp = GiottoAgent(game=args["game"])
+    elif args["opp"].lower() == "valuenet":
+        opp = ValueNetAgent(game=args["game"])
     elif args["opp"].lower() == "alphazero":
         opp = AlphaZeroAgent(simulations=800, cpuct=3.5, game=args["game"])
     elif args["opp"].lower() == "bitbully":
@@ -90,4 +90,4 @@ if __name__ == "__main__":
         agents[0].name += "_1"
         agents[1].name += "_2"
 
-    play_n_games(n_games, env, agents, invert_starts=False)
+    play_n_games(n_games, env, agents, invert_starts=True)

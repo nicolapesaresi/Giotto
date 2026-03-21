@@ -52,6 +52,46 @@ class Connect4Env(GenericEnv):
         diag_up_right = np.diagonal(square_windows_flipped, axis1=-2, axis2=-1)
         return bool(np.any(np.all(diag_up_right, axis=-1)))
 
+    def get_winning_cells(self, player_idx: int) -> list[tuple[int, int]] | None:
+        """Returns the cells forming the winning line for a player.
+
+        Args:
+            player_idx: index of the winning player.
+
+        Returns:
+            List of (row, col) tuples of the winning cells, or None if no win found.
+        """
+        player_mask = self.board == player_idx
+
+        horiz_windows = sliding_window_view(player_mask, window_shape=(1, 4)).squeeze(axis=2)
+        idx = np.argwhere(np.all(horiz_windows, axis=-1))
+        if len(idx):
+            r, c = idx[0]
+            return [(r, c + j) for j in range(4)]
+
+        vert_windows = sliding_window_view(player_mask, window_shape=(4, 1)).squeeze(axis=3)
+        idx = np.argwhere(np.all(vert_windows, axis=-1))
+        if len(idx):
+            r, c = idx[0]
+            return [(r + j, c) for j in range(4)]
+
+        square_windows = sliding_window_view(player_mask, window_shape=(4, 4))
+        diag_down_right = np.diagonal(square_windows, axis1=-2, axis2=-1)
+        idx = np.argwhere(np.all(diag_down_right, axis=-1))
+        if len(idx):
+            r, c = idx[0]
+            return [(r + j, c + j) for j in range(4)]
+
+        flipped_mask = player_mask[:, ::-1]
+        square_windows_flipped = sliding_window_view(flipped_mask, window_shape=(4, 4))
+        diag_up_right = np.diagonal(square_windows_flipped, axis1=-2, axis2=-1)
+        idx = np.argwhere(np.all(diag_up_right, axis=-1))
+        if len(idx):
+            r, c_flipped = idx[0]
+            return [(r + j, self.cols - 1 - c_flipped - j) for j in range(4)]
+
+        return None
+
     def get_valid_actions(self) -> list[int]:
         """Extracts valid actions from env.
 

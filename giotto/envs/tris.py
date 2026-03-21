@@ -45,6 +45,27 @@ class TrisEnv(GenericEnv):
             return True
         return False
 
+    def get_winning_cells(self, player_idx: int) -> list[tuple[int, int]] | None:
+        """Returns the cells forming the winning line for a player.
+
+        Args:
+            player_idx: index of the winning player.
+
+        Returns:
+            List of (row, col) tuples of the winning cells, or None if no win found.
+        """
+        board = self.board
+        for i in range(self.rows):
+            if np.all(board[i, :] == player_idx):
+                return [(i, j) for j in range(self.cols)]
+            if np.all(board[:, i] == player_idx):
+                return [(j, i) for j in range(self.rows)]
+        if np.all(np.diag(board) == player_idx):
+            return [(i, i) for i in range(self.rows)]
+        if np.all(np.diag(np.fliplr(board)) == player_idx):
+            return [(i, self.cols - 1 - i) for i in range(self.rows)]
+        return None
+
     def get_valid_actions(self) -> list[int]:
         """Extracts valid actions from env.
 
