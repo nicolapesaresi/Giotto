@@ -91,6 +91,12 @@ class GenericGame:
                 pygame.display.flip()
         return render_state
 
+    def reset_for_reentry(self):
+        """Resets transient state so the game can be re-entered from the launcher."""
+        self.env.reset(1)
+        self.menu = None
+        self.gameover = None
+
     def run(self):
         """Runs env loop in pygame desktop mode."""
         self.clock = pygame.time.Clock()
