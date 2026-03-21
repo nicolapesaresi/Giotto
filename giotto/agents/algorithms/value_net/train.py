@@ -12,8 +12,8 @@ from tqdm import tqdm
 
 from giotto.agents.algorithms.value_net.value_net import ValueNet
 from giotto.agents.generic import GenericAgent
-from giotto.agents.giotto import GiottoAgent
 from giotto.agents.random import RandomAgent
+from giotto.agents.value_net_agent import ValueNetAgent
 from giotto.envs.generic import GenericEnv
 from giotto.utils.simmetries import EquivalentBoards
 
@@ -56,8 +56,8 @@ class ValueNetTrainer:
         games = []
         for _ in tqdm(range(n_games), desc="Self-play in progress..."):
             agents = [
-                GiottoAgent(simulations=mcts_sims, valuenet=self.net),
-                GiottoAgent(simulations=mcts_sims, valuenet=self.net),
+                ValueNetAgent(simulations=mcts_sims, valuenet=self.net),
+                ValueNetAgent(simulations=mcts_sims, valuenet=self.net),
             ]
             new_memory = self.simulate_game(agents)
             games.extend(new_memory)
@@ -124,7 +124,7 @@ class ValueNetTrainer:
 
         # vs random
         results = []
-        agents = [GiottoAgent(simulations=mcts_sims, valuenet=self.net), opp]
+        agents = [ValueNetAgent(simulations=mcts_sims, valuenet=self.net), opp]
         pbar = tqdm(range(n_games), desc=f"Playing vs {opp.name}", ncols=100, leave=True)
         for _ in range(n_games):
             env = self.base_env.clone()

@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 from pathlib import Path
-from giotto.agents.generic import GenericAgent
+
 from giotto.agents.algorithms.mcts import MCTS
+from giotto.agents.generic import GenericAgent
 
 # try except block to make it work in browser mode
 try:
     BROWSER_MODE = False
     import torch
+
     from giotto.agents.algorithms.value_net.value_net import ValueNet
 except ImportError:
     BROWSER_MODE = True
@@ -15,7 +18,7 @@ except ImportError:
     )
 
 
-class GiottoAgent(GenericAgent):
+class ValueNetAgent(GenericAgent):
     """Selects action with MCTS and value network."""
 
     def __init__(
@@ -38,13 +41,9 @@ class GiottoAgent(GenericAgent):
             else:
                 raise ValueError(f"Game {game} not supported.")
             if not BROWSER_MODE:
-                self.load_valuenet(
-                    Path(__file__).parent / "models" / game.lower() / "valuenet.pt"
-                )
+                self.load_valuenet(Path(__file__).parent / "models" / game.lower() / "valuenet.pt")
             else:
-                self.load_valuenet_numpy(
-                    Path(__file__).parent / "models" / game.lower() / "valuenet.npz"
-                )
+                self.load_valuenet_numpy(Path(__file__).parent / "models" / game.lower() / "valuenet.npz")
 
         self.simulations = simulations
         self.cpuct = cpuct
@@ -60,8 +59,7 @@ class GiottoAgent(GenericAgent):
         self.valuenet.load_numpy_weights(path)
 
     def select_action(self, env):
-        mcts = MCTS(
-            n_simulations=self.simulations, cpuct=self.cpuct, valuenet=self.valuenet
-        )
+        """Selects action."""
+        mcts = MCTS(n_simulations=self.simulations, cpuct=self.cpuct, valuenet=self.valuenet)
         action = mcts.run(env)
         return action

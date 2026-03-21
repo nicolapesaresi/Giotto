@@ -1,7 +1,7 @@
 import pygame
 from pygame.sprite import Group
 
-from giotto.games.ui.buttons import Button, PlayerSelectButton, StartButton
+from giotto.games.ui.buttons import Button, PlayerSelectButton, StartButton, SwapButton
 from giotto.games.ui.states import States
 
 # from giotto.games.ui.texts import PressToPlayText
@@ -52,7 +52,12 @@ class MainMenu:
             settings_module=self.settings,
         )
 
-        self.buttons.add(self.start_button, self.x_button, self.o_button)
+        self.swap_button = SwapButton(
+            pos=(self.settings.WIDTH * 0.75, int(self.settings.HEIGHT * 0.76)),
+            settings_module=self.settings,
+        )
+
+        self.buttons.add(self.start_button, self.x_button, self.o_button, self.swap_button)
         if self.from_launcher:
             self.buttons.add(self.back_button)
 
@@ -70,7 +75,11 @@ class MainMenu:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for button in self.buttons:
                     if button.clicked(event.pos):
-                        if isinstance(button, PlayerSelectButton):
+                        if isinstance(button, SwapButton):
+                            x_type = self.x_button.player_type
+                            self.x_button.set_player_type(self.o_button.player_type)
+                            self.o_button.set_player_type(x_type)
+                        elif isinstance(button, PlayerSelectButton):
                             button.next_option()
                         elif isinstance(button, StartButton):
                             return (

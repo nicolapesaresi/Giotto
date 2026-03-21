@@ -5,11 +5,12 @@ python ./giotto/scripts/initialized_game.py -g connect4 -p random -o random -m 4
 
 import argparse
 
-from giotto.agents.giotto import GiottoAgent
+from giotto.agents.alphazero import AlphaZeroAgent
 from giotto.agents.human import HumanAgent
 from giotto.agents.mcts import MCTSAgent
 from giotto.agents.minimax import MinimaxAgent
 from giotto.agents.random import RandomAgent
+from giotto.agents.value_net_agent import ValueNetAgent
 from giotto.envs.connect4 import Connect4Env
 from giotto.envs.tris import TrisEnv
 from giotto.utils.text_play import initialized_game
@@ -55,8 +56,10 @@ if __name__ == "__main__":
         player = MCTSAgent()
     elif args["player"].lower() == "minimax":
         player = MinimaxAgent()
-    elif args["player"].lower() == "giotto":
-        player = GiottoAgent(game=args["game"])
+    elif args["player"].lower() == "valuenet":
+        player = ValueNetAgent(game=args["game"])
+    elif args["alphazero"].lower() == "alphazero":
+        player = AlphaZeroAgent(simulations=100, game=args["game"])
     else:
         raise ValueError(f"{args['player']} not a valid opponent")
 
@@ -69,8 +72,10 @@ if __name__ == "__main__":
         opp = MCTSAgent()
     elif args["opp"].lower() == "minimax":
         opp = MinimaxAgent()
-    elif args["opp"].lower() == "giotto":
-        opp = GiottoAgent(game=args["game"])
+    elif args["opp"].lower() == "valuenet":
+        opp = ValueNetAgent(game=args["game"])
+    elif args["opp"].lower() == "alphazero":
+        opp = AlphaZeroAgent(simulations=100, game=args["game"])
     else:
         raise ValueError(f"{args['opp']} not a valid opponent")
 

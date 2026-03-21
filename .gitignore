@@ -166,3 +166,7 @@ cython_debug/
 #.idea/
 
 logs/
+.vscode/
+*.jsonl
+.DS_Store
+CLAUDE.md

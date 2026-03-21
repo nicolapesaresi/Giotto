@@ -25,7 +25,7 @@ class GenericEnv:
         self.turn_counter = 0
 
         self.done = False
-        self.info = {}
+        self.info = {"moves": []}
 
     def step(self, action: int):
         """Updates environment after an action has been taken.
@@ -34,9 +34,7 @@ class GenericEnv:
             action: index of board cell that will be played by current player.
                 Has to be integer (1-9 for tris, 1-7 for connect4).
         """
-        assert (
-            action in self.get_valid_actions()
-        ), f"Received invalid action {action, type(action)}, has to be int in {self.get_valid_actions()}"
+        self.info["moves"].append(action)
 
         # decode action
         action = self.decode_action(action)
@@ -53,12 +51,14 @@ class GenericEnv:
         elif self.turn_counter == self.rows * self.cols:
             self.done = True
             self.info["winner"] = -1  # Draw
-        else:
-            self.current_player = (self.current_player + 1) % 2
+
+        # update current player
+        # do this also when game finished, as it's needed for mcts
+        self.current_player = (self.current_player + 1) % 2
 
     def get_state(self) -> list[np.ndarray, int]:
         """Returns state of the env."""
-        return [self.board, self.current_player]
+        return [self.board.copy(), int(self.current_player)]
 
     # -------------
     # game specific methods, to be implemented in the child classes

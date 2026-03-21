@@ -7,22 +7,22 @@ from giotto.utils.simmetries import EquivalentBoards
 class TrisEnv(GenericEnv):
     """Tic Tac Toe environment."""
 
+    simmetries = EquivalentBoards(
+        rotate90=True,
+        rotate180=True,
+        rotate270=True,
+        reflect_horizontal=True,
+        reflect_vertical=True,
+        reflect_diag_nw_se=True,
+        reflect_diag_ne_sw=True,
+    )
+
     def __init__(self):
         """Instantiates environment."""
         signs = ["o", "x", " "]  # third is empty place, accessed with -1
         rows = 3
         cols = 3
         super().__init__(signs, rows, cols)
-        self.simmetries = EquivalentBoards(
-            rotate90=True,
-            rotate180=True,
-            rotate270=True,
-            reflect_horizontal=True,
-            reflect_vertical=True,
-            reflect_diag_nw_se=True,
-            reflect_diag_ne_sw=True,
-        )
-
         self.reset()
 
     def check_win(self, player_idx: int) -> bool:
@@ -44,6 +44,27 @@ class TrisEnv(GenericEnv):
         ):
             return True
         return False
+
+    def get_winning_cells(self, player_idx: int) -> list[tuple[int, int]] | None:
+        """Returns the cells forming the winning line for a player.
+
+        Args:
+            player_idx: index of the winning player.
+
+        Returns:
+            List of (row, col) tuples of the winning cells, or None if no win found.
+        """
+        board = self.board
+        for i in range(self.rows):
+            if np.all(board[i, :] == player_idx):
+                return [(i, j) for j in range(self.cols)]
+            if np.all(board[:, i] == player_idx):
+                return [(j, i) for j in range(self.rows)]
+        if np.all(np.diag(board) == player_idx):
+            return [(i, i) for i in range(self.rows)]
+        if np.all(np.diag(np.fliplr(board)) == player_idx):
+            return [(i, self.cols - 1 - i) for i in range(self.rows)]
+        return None
 
     def get_valid_actions(self) -> list[int]:
         """Extracts valid actions from env.
@@ -68,8 +89,8 @@ class TrisEnv(GenericEnv):
         Returns:
             action as tuple (row, col).
         """
-        if isinstance(action, int):
-            action_int = action - 1  # convert to 0-8
+        if isinstance(action, (int | np.integer)):
+            action_int = int(action) - 1  # convert to 0-8
             action = (action_int // 3, action_int % 3)
         return action
 
@@ -86,10 +107,16 @@ class TrisEnv(GenericEnv):
 
     def clone(self):
         """Returns a copy of the env."""
-        new_env = TrisEnv()
+        new_env = object.__new__(TrisEnv)
+        new_env.signs = self.signs
+        new_env.rows = self.rows
+        new_env.cols = self.cols
         new_env.board = self.board.copy()
         new_env.current_player = self.current_player
         new_env.turn_counter = self.turn_counter
         new_env.done = self.done
-        new_env.info = self.info.copy()
+        info = {"moves": self.info["moves"].copy()}
+        if "winner" in self.info:
+            info["winner"] = self.info["winner"]
+        new_env.info = info
         return new_env

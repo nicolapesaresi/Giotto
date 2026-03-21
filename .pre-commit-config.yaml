@@ -30,6 +30,14 @@ repos:
           - --preserve-cell-metadata
           - tags
           - --
+  - repo: local
+    hooks:
+      - id: pytest
+        name: Run pytest
+        entry: python -m pytest tests/
+        language: system
+        pass_filenames: false
+        always_run: true
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.1
     hooks:

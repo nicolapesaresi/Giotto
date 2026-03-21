@@ -160,6 +160,42 @@ class PygameConnect4(GenericGame):
 
         moves.draw(self.screen)
 
+        # last move indicator: subtle outline on the most recently played cell
+        if self.env.info["moves"]:
+            last_col = int(self.env.info["moves"][-1]) - 1  # 0-indexed
+            col_vals = self.env.board[:, last_col]
+            last_row = max(i for i, v in enumerate(col_vals) if v != -1)
+            draw_row = self.env.rows - 1 - last_row
+            cell_rect = pygame.Rect(
+                settings_connect4.GRID_X0 + last_col * settings_connect4.CELL_WIDTH,
+                settings_connect4.GRID_Y0 + draw_row * settings_connect4.CELL_HEIGHT,
+                settings_connect4.CELL_WIDTH,
+                settings_connect4.CELL_HEIGHT,
+            )
+            pygame.draw.rect(self.screen, (160, 160, 160), cell_rect, 2)
+
+        # winning line
+        winner = self.env.info.get("winner")
+        if self.env.done and winner not in (None, -1):
+            winning_cells = self.env.get_winning_cells(winner)
+            if winning_cells:
+                color = (255, 220, 0)
+
+                def _center(row, col):
+                    draw_row = self.env.rows - 1 - row
+                    return (
+                        settings_connect4.GRID_X0
+                        + col * settings_connect4.CELL_WIDTH
+                        + settings_connect4.CELL_WIDTH // 2,
+                        settings_connect4.GRID_Y0
+                        + draw_row * settings_connect4.CELL_HEIGHT
+                        + settings_connect4.CELL_HEIGHT // 2,
+                    )
+
+                start = _center(*winning_cells[0])
+                end = _center(*winning_cells[-1])
+                pygame.draw.line(self.screen, color, start, end, 5)
+
     def draw_text(self):
         """Draws game texts on the screen."""
         texts = Group()

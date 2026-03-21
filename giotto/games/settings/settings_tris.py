@@ -38,6 +38,9 @@ cell_map = {
 CELL_WIDTH = GRID_X2 - GRID_X1
 CELL_HEIGHT = GRID_Y2 - GRID_Y1
 
+DEFAULT_X_PLAYER = PlayerType.HUMAN
+DEFAULT_O_PLAYER = PlayerType.GIOTTO_TRIS
+
 # which player types are available for this game (order matters for UI cycling)
 SUPPORTED_PLAYER_TYPES = [
     PlayerType.HUMAN,

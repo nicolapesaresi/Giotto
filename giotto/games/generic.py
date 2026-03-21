@@ -45,9 +45,11 @@ class GenericGame:
         self.env = env
         self.env.reset(1)  # X always starts
 
+        default_x = getattr(settings_module, "DEFAULT_X_PLAYER", list(self.player_types.keys())[0])
+        default_o = getattr(settings_module, "DEFAULT_O_PLAYER", list(self.player_types.keys())[0])
         self.menu_selections = {
-            "o_player": list(self.player_types.keys())[0],
-            "x_player": list(self.player_types.keys())[0],
+            "x_player": default_x,
+            "o_player": default_o,
         }
         self.set_agents(self.menu_selections)
 
