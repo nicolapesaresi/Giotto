@@ -33,6 +33,8 @@ class PygameLauncher:
         )
         self.connect4_btn = Button("Connect4", pos=(cx, int(settings.HEIGHT * 0.82)), settings_module=settings)
         self.buttons = [self.tictactoe_btn, self.connect4_btn]
+        self._tris_game = None
+        self._c4_game = None
 
     def setup_pygame(self):
         """Sets up pygame and screen for desktop mode."""
@@ -66,11 +68,17 @@ class PygameLauncher:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     pos = event.pos
                     if self.tictactoe_btn.clicked(pos):
-                        game = PygameTris(screen=self.screen, start_at_menu=True, from_launcher=True)
-                        game.run()
+                        if self._tris_game is None:
+                            self._tris_game = PygameTris(screen=self.screen, start_at_menu=True, from_launcher=True)
+                        else:
+                            self._tris_game.reset_for_reentry()
+                        self._tris_game.run()
                     elif self.connect4_btn.clicked(pos):
-                        game = PygameConnect4(screen=self.screen, start_at_menu=True, from_launcher=True)
-                        game.run()
+                        if self._c4_game is None:
+                            self._c4_game = PygameConnect4(screen=self.screen, start_at_menu=True, from_launcher=True)
+                        else:
+                            self._c4_game.reset_for_reentry()
+                        self._c4_game.run()
             self.draw()
             pygame.display.flip()
         pygame.quit()
