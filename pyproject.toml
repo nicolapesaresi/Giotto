@@ -21,6 +21,7 @@ matplotlib = "^3.10.8"
 pre-commit = "^4.5.1"
 pygbag = "^0.9.2"
 ghp-import = "^2.1.0"
+pytest = "^9.0.2"
 
 
 [tool.poetry.group.solver.dependencies]
@@ -35,7 +36,7 @@ build-backend = "poetry.core.masonry.api"
 # exclude = [
 #   "..."
 # ]
-extend-include = ["*.ipynb"]
+extend-include = []
 # Target version refers to minimum python version supported
 target-version = "py310"
 line-length = 120
@@ -93,3 +94,5 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 # We don't want to enforce line length on notebooks
 "*.ipynb" = ["E501"]
+# Test files don't need docstrings
+"tests/*.py" = ["D"]

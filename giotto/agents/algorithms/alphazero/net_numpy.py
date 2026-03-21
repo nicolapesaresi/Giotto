@@ -26,10 +26,8 @@ class AlphaZeroNetNumpy:
         self.channels = channels
         self.residual_blocks = residual_blocks
 
-        # BatchNorm eps: PyTorch default is 1e-5 unless you changed it. [web:46]
         self._bn_eps = 1e-5
 
-        # Storage for weights loaded via load_state_dict()
         self._sd = {}
         self._device = "cpu"  # compatibility only
 
@@ -37,7 +35,7 @@ class AlphaZeroNetNumpy:
     # Torch-like API helpers
     # -------------------------
     def parameters(self):
-        """Torch compatibility: allows next(self.parameters()).device pattern."""
+        """Torch compatibility stub: allows ``next(self.parameters()).device`` pattern."""
 
         class _P:
             def __init__(self, device):  # noqa: D401
@@ -137,12 +135,41 @@ class AlphaZeroNetNumpy:
         return x[None]  # [1,2,H,W] numpy (not torch)
 
     def predict(self, state: list[np.ndarray, int]):
-        """Returns (policy_probs, value) as numpy, like your Torch version."""
-        self.eval()
+        """Returns (policy_probs, value) as numpy, like the Torch version."""
         x = self.process_state(state)
         policy_logits, value = self.forward(x)
         policy_probs = self._softmax(policy_logits, axis=1)
         return policy_probs.squeeze(), value.squeeze()
+
+    def batch_predict(self, states: list) -> tuple[np.ndarray, np.ndarray]:
+        """Predict (policy_probs, values) for a batch of states as numpy arrays.
+
+        Args:
+            states: List of [board, player_id] states.
+
+        Returns:
+            Tuple of (policies, values) with shapes (B, policy_output_size) and (B,).
+        """
+        B = len(states)
+        c, h, w = self.input_size
+        buf = np.zeros((B, c, h, w), dtype=np.float32)
+        for i, (board, player_id) in enumerate(states):
+            buf[i, 0] = board == int(player_id)
+            buf[i, 1] = board == (1 - int(player_id))
+
+        policy_logits, value = self.forward(buf)
+        policies = self._softmax(policy_logits, axis=1)
+        values = value.squeeze(-1)
+        return policies, values
+
+    def load_numpy_weights(self, path: str) -> None:
+        """Load weights from a .npz file produced by convert_pt_to_npz.
+
+        Args:
+            path: Path to the .npz file.
+        """
+        data = np.load(path)
+        self.load_state_dict(dict(data))
 
     # -------------------------
     # Weight loading (Torch-style)
@@ -215,8 +242,6 @@ class AlphaZeroNetNumpy:
                     raise KeyError(f"Missing key in state_dict: {kk}")
                 self._sd[kk] = to_np(state_dict[kk])
 
-        # Note: BatchNorm also has num_batches_tracked buffers in state_dict sometimes;
-        # we ignore them safely. [web:66]
         return self
 
     # -------------------------
@@ -256,11 +281,9 @@ class AlphaZeroNetNumpy:
         return e / np.sum(e, axis=axis, keepdims=True)
 
     def _linear(self, x, w, b):
-        # PyTorch Linear: y = x @ w.T + b, with w shape [out,in]. [web:76]
         return x @ w.T + b
 
     def _bn2d_eval(self, x, gamma, beta, running_mean, running_var):
-        # Eval BN uses running stats. [web:46]
         mean = running_mean[None, :, None, None]
         var = running_var[None, :, None, None]
         gamma = gamma[None, :, None, None]

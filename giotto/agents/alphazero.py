@@ -13,9 +13,7 @@ try:
     from giotto.agents.algorithms.alphazero.net import AlphaZeroNet
 except ImportError:
     BROWSER_MODE = True
-    # from giotto.agents.algorithms.value_net.value_net_numpy import (
-    #     ValueNetNumpy as ValueNet,
-    # )
+    from giotto.agents.algorithms.alphazero.net_numpy import AlphaZeroNetNumpy as AlphaZeroNet
 
 
 class AlphaZeroAgent(GenericAgent):
@@ -47,10 +45,8 @@ class AlphaZeroAgent(GenericAgent):
                 raise ValueError(f"Game {game} not supported.")
             if not BROWSER_MODE:
                 self.load_net(Path(__file__).parent / "models" / game.lower() / "alphazero.pt")
-            # else:
-            #     self.load_valuenet_numpy(
-            #         Path(__file__).parent / "models" / game.lower() / "alphazero.npz"
-            #     )
+            else:
+                self.net.load_numpy_weights(Path(__file__).parent / "models" / game.lower() / "alphazero.npz")
 
         self.simulations = simulations
         self.cpuct = cpuct
