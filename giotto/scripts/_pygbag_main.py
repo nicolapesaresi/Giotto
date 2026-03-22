@@ -1,3 +1,5 @@
+"""Pygbag web version is deprecated. This script was used to run Pygame in the browser."""
+
 import asyncio  # noqa: I001
 import numpy  # needed here, otherwise pygbag breaks  # noqa: F401
 import pygame

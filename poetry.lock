@@ -1305,20 +1305,6 @@ files = [
 ]
 
 [[package]]
-name = "pygbag"
-version = "0.9.3"
-description = "package and run python/pygame-ce wasm (and more) directly in modern web browsers."
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "pygbag-0.9.3-py3-none-any.whl", hash = "sha256:ada203ff5a214f721029cb3b3741f641b032cde1ccaac60bc8dd9e641f3da3d5"},
-    {file = "pygbag-0.9.3.tar.gz", hash = "sha256:e1a4d8027ed22fc7e453abe0b4abb35a7bfb4c39fa7f1d1b2a6b1f3a92696349"},
-]
-
-[package.extras]
-sim = ["aioconsole", "aiohttp", "asyncio_socks_server"]
-
-[[package]]
 name = "pygments"
 version = "2.19.2"
 description = "Pygments is a syntax highlighting package written in Python."
@@ -1731,4 +1717,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "1727f38d6d54d90e2dfedaabfec4890e7a14d12ec2be1fe77493afb76164a89e"
+content-hash = "a0b49917713ac3f5ee739c0a925d5f4c0eec80c166b9574785c1d242a92af9e0"

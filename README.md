@@ -39,7 +39,6 @@ The repository is structured as follows:
 - In the `giotto/envs` folder you can find the game environments. These define the games rules and logic.
 - In the `giotto/games` folder are the pygame interfaces for the game environments.
 - In the `giotto/scripts` are utilities to play in text mode or in Pygame, as well as simulate many games between agents or evaluate their play from a fixed/random starting move.
-- `pygbag_main.py` is the script that is used by Pygbag to handle pygame in the browser (deprecated).
 - The `web` folder contains the JS code to run the game and the agents in browser.
 
 ## Installation
@@ -75,12 +74,8 @@ python giotto/scripts/run_pygame.py
 ## Development
 
 The game is available in desktop mode with Pygame and in browser mode. Modifications to the game loop have to be replicated in both the game's pygame script and the web folder, to work both locally and in browser.
-After installing dev depencencies, browser version can be run on localhost with 
-```
-poetry install --with dev
-pygbag .
-```
-After testing the changes, they can be deployed in github pages with
+
+The browser version can be tested locally with `make runweb` and deployed to GitHub Pages with:
 ```
 make publish
 ```

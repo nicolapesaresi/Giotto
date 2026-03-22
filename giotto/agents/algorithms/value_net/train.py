@@ -158,7 +158,7 @@ class ValueNetTrainer:
             json.dump(config, f)
 
     def save_model(self, path: str):
-        """Save the model and optimizer state to a file. Also exports NumPy .npz for pygbag."""
+        """Save the model and optimizer state to a file. Also exports NumPy .npz weights."""
         torch.save(
             {
                 "model_state_dict": self.net.state_dict(),
