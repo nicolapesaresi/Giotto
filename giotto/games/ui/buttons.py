@@ -99,6 +99,26 @@ class BackToMenuButton(Button):
         )
 
 
+class InGameMenuButton(Button):
+    """Small button shown during gameplay to return to the menu."""
+
+    def __init__(self, settings_module=None):
+        """Instantiates in-game menu button.
+
+        Args:
+            settings_module: settings module for the game.
+        """
+        pos = (settings_module.WIDTH * 0.08, settings_module.HEIGHT * 0.05)
+        super().__init__(
+            text="MENU",
+            pos=pos,
+            text_color="black",
+            bg_color="yellow",
+            size=(settings_global.WIDTH * 0.1, settings_global.HEIGHT * 0.055),
+            settings_module=settings_module,
+        )
+
+
 class PlayerSelectButton(Button):
     """Button to select player type."""
 

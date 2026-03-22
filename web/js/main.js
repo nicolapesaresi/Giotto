@@ -158,7 +158,6 @@ async function startGame() {
 
     // Init worker if any AI agent is selected
     if (needsWorker(xAgent) || needsWorker(oAgent)) {
-        showThinking(true);
         const ctx = canvas.getContext("2d");
         ctx.fillStyle = "rgb(30,30,30)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -198,6 +197,14 @@ async function startGame() {
         } else {
             nextTurn();
         }
+    }, () => {
+        // Menu button callback — interrupt game and go back to menu
+        if (worker) worker.terminate();
+        worker = null;
+        aiThinking = false;
+        showThinking(false);
+        board = null;
+        showMenu();
     });
 
     board.draw();
@@ -219,7 +226,7 @@ function nextTurn() {
 }
 
 function showGameOver() {
-    board.disableInput();
+    board.destroy();
     const gameover = new GameOver(canvas, env, getAgents(), () => {
         showMenu();
     });

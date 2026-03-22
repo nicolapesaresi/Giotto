@@ -5,6 +5,7 @@ import pygame
 
 from giotto.agents.human import HumanAgent
 from giotto.envs.generic import GenericEnv
+from giotto.games.ui.buttons import InGameMenuButton
 from giotto.games.ui.gameover_screen import GameOver
 from giotto.games.ui.main_menu import MainMenu
 from giotto.games.ui.states import States
@@ -56,6 +57,7 @@ class GenericGame:
         self.initial_state = States.MENU if start_at_menu else States.GAME
         self.menu = None
         self.gameover = None
+        self.ingame_menu_btn = InGameMenuButton(settings_module=self.settings)
 
     def setup_pygame(self):
         """Sets up pygame and screen for desktop mode."""
@@ -123,8 +125,18 @@ class GenericGame:
                     if event.type == pygame.QUIT:
                         self.close()
 
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # noqa: SIM102
+                        if self.ingame_menu_btn.clicked(event.pos):
+                            self.env.reset(1)
+                            self.load_gamescreen()
+                            render_state = States.MENU
+                            continue
+
                     if self.is_human_turn():
                         action = self.check_move_click(event)
+
+                if render_state != States.GAME:
+                    continue
 
                 if action is None and not self.is_human_turn():
                     pygame.time.delay(200)
@@ -136,6 +148,7 @@ class GenericGame:
                 if render_state not in (States.CLOSE, States.LAUNCHER):
                     self.draw_screen()
                     self.draw_text()
+                    self.screen.blit(self.ingame_menu_btn.image, self.ingame_menu_btn.rect)
 
                 if self.env.done:
                     render_state = States.GAMEOVER
