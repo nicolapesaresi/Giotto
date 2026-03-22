@@ -6,6 +6,7 @@ python ./giotto/scripts/play_n_games.py -g connect4 -p random -o random
 import argparse
 
 from giotto.agents.alphazero import AlphaZeroAgent
+from giotto.agents.alphazero_blind import BlindAlphaZeroAgent
 from giotto.agents.bitbully import BitBullyAgent
 from giotto.agents.human import HumanAgent
 from giotto.agents.mcts import MCTSAgent
@@ -61,6 +62,8 @@ if __name__ == "__main__":
         player = ValueNetAgent(game=args["game"])
     elif args["player"].lower() == "alphazero":
         player = AlphaZeroAgent(simulations=800, cpuct=3.5, game=args["game"])
+    elif args["player"].lower() == "blindaz":
+        player = BlindAlphaZeroAgent(game=args["game"])
     elif args["player"].lower() == "bitbully":
         player = BitBullyAgent()
     else:
@@ -79,6 +82,8 @@ if __name__ == "__main__":
         opp = ValueNetAgent(game=args["game"])
     elif args["opp"].lower() == "alphazero":
         opp = AlphaZeroAgent(simulations=800, cpuct=3.5, game=args["game"])
+    elif args["opp"].lower() == "blindaz":
+        opp = BlindAlphaZeroAgent(game=args["game"])
     elif args["opp"].lower() == "bitbully":
         opp = BitBullyAgent()
     else:
