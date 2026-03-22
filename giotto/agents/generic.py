@@ -10,8 +10,10 @@ class GenericAgent:
 
     def select_action(self, env: GenericEnv) -> int:
         """Selects an action to be played. To be implemented in child classes.
+
         Args:
             env: environment to extract valid actions from.
+
         Returns:
             action as integer (1-9 tris, 1-7 connect4).
         """

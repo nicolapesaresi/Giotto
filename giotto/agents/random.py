@@ -1,6 +1,7 @@
 import numpy as np
-from giotto.envs.generic import GenericEnv
+
 from giotto.agents.generic import GenericAgent
+from giotto.envs.generic import GenericEnv
 
 
 class RandomAgent(GenericAgent):
@@ -11,8 +12,10 @@ class RandomAgent(GenericAgent):
 
     def select_action(self, env: GenericEnv) -> int:
         """Randomly selects valid action.
+
         Args:
             env: environment to extract valid actions from.
+
         Returns:
             action as integer (1-9 tris, 1-7 connect4).
         """

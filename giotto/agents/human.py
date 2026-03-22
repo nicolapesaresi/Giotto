@@ -1,5 +1,5 @@
-from giotto.envs.generic import GenericEnv
 from giotto.agents.generic import GenericAgent
+from giotto.envs.generic import GenericEnv
 
 
 class HumanAgent(GenericAgent):
@@ -11,8 +11,10 @@ class HumanAgent(GenericAgent):
 
     def select_action(self, env: GenericEnv) -> int:
         """Asks human for input and check action is valid.
+
         Args:
             env: environment to extract valid actions from.
+
         Returns:
             action as integer (1-9 tris, 1-7 connect4).
         """
@@ -21,8 +23,6 @@ class HumanAgent(GenericAgent):
         action: int = None
         while action not in valid_actions:
             if self.mode == "text":
-                action = int(
-                    input(f"Enter next move: [valid actions: {valid_actions}] ")
-                )
+                action = int(input(f"Enter next move: [valid actions: {valid_actions}] "))
 
         return action
