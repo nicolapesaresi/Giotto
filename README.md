@@ -3,7 +3,8 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit) 
 
 Giotto and Giottino are AlphaZero-inspired agents for the games of TicTacToe and Connect4 that can achieve near-perfect play.
-This repository contains the env implementation of the two player grid based games TicTacToe and Connect4, together with the web and Pygame implementation of the games and a collection of agents that can play the game. It's possible to play against the agents or make them challenge eachother.
+
+This repository contains the env implementation of the two player grid based games TicTacToe and Connect4, together with the web and Pygame implementation of the games and a collection of agents that can play. It's possible to play against the agents or make them challenge eachother.
 
 [PLAY IN BROWSER](https://nicolapesaresi.github.io/Giotto/)
 
@@ -20,7 +21,7 @@ The code is structured to make it easy to expand the selection of games with oth
 
 The game theory optimal result of TicTacToe is a draw, and the best starting move is one of the corners for the first player and the center for the second player. Giottino learned this strategy and always draws against perfect play (Minimax agent).
 
-Connect4 is a forced win for the first player if he plays in the middle. Giotto can always win when starting against a perfect player (BitBully agent), and loses in 38 moves (optimal is 41) when playing second.
+Connect4 is a forced win for the first player if he plays in the middle. Giotto can always win when starting against a perfect player (BitBully agent), and loses in 41 moves (game theory optimal outcome) when playing second.
 
 ## Agents
 Currently implemented agents are:
@@ -34,10 +35,20 @@ Currently implemented agents are:
 Defaults parameters for the agents, such as number of MCTS simulations, can be found at `giotto/games/settings/agent_settings.py`.  
 Minimax supports both games, but is by default turned off for Connect4 as it is too slow.
 
+## Training
+
+The specific configs and training scripts used for the training of Giotto and Giottino can be found in `giotto/agents/algorithms/alphazero`. The agents are trained in AlphaZero style, learning only via self-play. Labeled datasets obtained with solvers (minimax for tic tac toe and BitBully for connect 4) were used to evaluate progress. At every training step, the agent played some games against the MCTS-only version to benchmark progress.
+
+Both models played 10.000 training games, the process took a couple hours for Giottino and nearly a week for Giotto. Training occurred on personal hardware without the use of a GPU.
+
+In the below chart is show Giotto (Connect 4) performance improvement over the course of the training.
+<img src="assets/giotto_training.png" width="95%" alt="Giotto training benchmark">
+
 ## Structure
 The repository is structured as follows:
 - In the `giotto/envs` folder you can find the game environments. These define the games rules and logic.
 - In the `giotto/games` folder are the pygame interfaces for the game environments.
+- In the `giotto/agents` folder is the code for the agents, training scripts and models.
 - In the `giotto/scripts` are utilities to play in text mode or in Pygame, as well as simulate many games between agents or evaluate their play from a fixed/random starting move.
 - The `web` folder contains the JS code to run the game and the agents in browser.
 
@@ -75,10 +86,7 @@ python giotto/scripts/run_pygame.py
 
 The game is available in desktop mode with Pygame and in browser mode. Modifications to the game loop have to be replicated in both the game's pygame script and the web folder, to work both locally and in browser.
 
-The browser version can be tested locally with `make runweb` and deployed to GitHub Pages with:
-```
-make publish
-```
+The browser version can be tested locally with `make runweb`.
 
 ## Resources
 - [Pygame documentation](https://www.pygame.org/docs/)
@@ -88,5 +96,5 @@ make publish
 - [Tic Tac Toe](https://en.wikipedia.org/wiki/Tic-tac-toe)
 - [Connect 4](https://en.wikipedia.org/wiki/Connect_Four)
 - [BitBully](https://github.com/MarkusThill/BitBully)
-- [Kaggle implementation](https://www.kaggle.com/code/auxeno/alphazero-connect-4-rl/notebook)
-- [Oracle AlphaZero posts](https://medium.com/oracledevs/lessons-from-implementing-alphazero-7e36e9054191)
+- [AlphaZero Kaggle implementation](https://www.kaggle.com/code/auxeno/alphazero-connect-4-rl/notebook)
+- [Oracle AlphaZero blog posts](https://medium.com/oracledevs/lessons-from-implementing-alphazero-7e36e9054191)
