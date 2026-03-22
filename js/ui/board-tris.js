@@ -4,23 +4,38 @@
  */
 
 export class TrisBoard {
-    constructor(canvas, env, agents, onMove) {
+    constructor(canvas, env, agents, onMove, onMenu) {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.env = env;
         this.agents = agents; // {0: agentObj, 1: agentObj}
         this.onMove = onMove; // callback when human clicks a valid cell
+        this.onMenu = onMenu; // callback when menu button is clicked
         this._bound = this._onClick.bind(this);
+        this._boundMenu = this._onMenuClick.bind(this);
+        this._menuBtn = null;
+        this._inputEnabled = false;
+        // Menu button listener is always active
+        this.canvas.addEventListener("click", this._boundMenu);
+        this.canvas.addEventListener("touchstart", this._boundMenu, { passive: false });
     }
 
     enableInput() {
+        this._inputEnabled = true;
         this.canvas.addEventListener("click", this._bound);
         this.canvas.addEventListener("touchstart", this._bound, { passive: false });
     }
 
     disableInput() {
+        this._inputEnabled = false;
         this.canvas.removeEventListener("click", this._bound);
         this.canvas.removeEventListener("touchstart", this._bound);
+    }
+
+    destroy() {
+        this.disableInput();
+        this.canvas.removeEventListener("click", this._boundMenu);
+        this.canvas.removeEventListener("touchstart", this._boundMenu);
     }
 
     draw() {
@@ -89,6 +104,9 @@ export class TrisBoard {
 
         // Turn text
         this._drawTurnText();
+
+        // In-game menu button (top-left)
+        this._drawMenuButton();
     }
 
     _cellCenter([row, col], x0, y0, cellW, cellH) {
@@ -131,9 +149,43 @@ export class TrisBoard {
         ctx.fillText(nameText, startX + textW + signW, y);
     }
 
+    _drawMenuButton() {
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        const btnW = w * 0.1;
+        const btnH = h * 0.055;
+        const btnX = w * 0.08 - btnW / 2;
+        const btnY = h * 0.05 - btnH / 2;
+
+        ctx.fillStyle = "#ffff00";
+        ctx.fillRect(btnX, btnY, btnW, btnH);
+        ctx.fillStyle = "#000";
+        ctx.font = `bold ${Math.floor(btnH * 0.5)}px monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("MENU", btnX + btnW / 2, btnY + btnH / 2);
+
+        this._menuBtn = { x: btnX, y: btnY, w: btnW, h: btnH };
+    }
+
+    _onMenuClick(e) {
+        const pos = this._getPos(e);
+        if (this._menuBtn) {
+            const b = this._menuBtn;
+            if (pos.x >= b.x && pos.x <= b.x + b.w && pos.y >= b.y && pos.y <= b.y + b.h) {
+                e.preventDefault();
+                this.destroy();
+                this.onMenu();
+            }
+        }
+    }
+
     _onClick(e) {
         e.preventDefault();
         const pos = this._getPos(e);
+
         const w = this.canvas.width;
         const h = this.canvas.height;
         const x0 = w * 0.2, cellW = w * 0.2;

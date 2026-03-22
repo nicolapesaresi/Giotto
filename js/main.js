@@ -12,6 +12,7 @@ import { GameOver } from "./ui/gameover.js";
 
 const canvas = document.getElementById("game-canvas");
 const loading = document.getElementById("loading");
+let redrawFn = null;
 
 // Resize canvas to fill viewport while maintaining 4:3 aspect ratio
 function resizeCanvas() {
@@ -35,6 +36,8 @@ function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
+
+    if (redrawFn) redrawFn();
 }
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
@@ -133,6 +136,7 @@ function showLauncher() {
         showMenu();
     });
     launcher.show();
+    redrawFn = () => launcher.draw();
 }
 
 function showMenu() {
@@ -142,8 +146,9 @@ function showMenu() {
         await startGame();
     }, () => {
         showLauncher();
-    });
+    }, xAgent?.id ?? null, oAgent?.id ?? null);
     menu.show();
+    redrawFn = () => menu.draw();
 }
 
 async function startGame() {
@@ -153,7 +158,6 @@ async function startGame() {
 
     // Init worker if any AI agent is selected
     if (needsWorker(xAgent) || needsWorker(oAgent)) {
-        showThinking(true);
         const ctx = canvas.getContext("2d");
         ctx.fillStyle = "rgb(30,30,30)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -193,9 +197,18 @@ async function startGame() {
         } else {
             nextTurn();
         }
+    }, () => {
+        // Menu button callback — interrupt game and go back to menu
+        if (worker) worker.terminate();
+        worker = null;
+        aiThinking = false;
+        showThinking(false);
+        board = null;
+        showMenu();
     });
 
     board.draw();
+    redrawFn = () => board.draw();
     nextTurn();
 }
 
@@ -213,11 +226,12 @@ function nextTurn() {
 }
 
 function showGameOver() {
-    board.disableInput();
+    board.destroy();
     const gameover = new GameOver(canvas, env, getAgents(), () => {
         showMenu();
     });
     gameover.show();
+    redrawFn = () => { board.draw(); gameover.draw(); };
 }
 
 // ============================================================
