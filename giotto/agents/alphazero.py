@@ -17,7 +17,7 @@ except ImportError:
 
 
 class AlphaZeroAgent(GenericAgent):
-    """Selects action with MCTS and value network."""
+    """Selects action with AlphaZero style policy-value network and MCTS."""
 
     def __init__(
         self,
