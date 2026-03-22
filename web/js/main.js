@@ -146,7 +146,7 @@ function showMenu() {
         await startGame();
     }, () => {
         showLauncher();
-    });
+    }, xAgent?.id ?? null, oAgent?.id ?? null);
     menu.show();
     redrawFn = () => menu.draw();
 }

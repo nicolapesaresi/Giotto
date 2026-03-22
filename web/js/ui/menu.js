@@ -20,7 +20,7 @@ const AGENT_TYPES = {
 };
 
 export class Menu {
-    constructor(canvas, game, onStart, onBack) {
+    constructor(canvas, game, onStart, onBack, initialX = null, initialO = null) {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.game = game;
@@ -29,8 +29,10 @@ export class Menu {
 
         const types = AGENT_TYPES[game];
         this.agents = types;
-        this.xIndex = 0;  // Human
-        this.oIndex = types.length - 1;  // AlphaZero
+        this.xIndex = initialX !== null ? types.findIndex(a => a.id === initialX) : 0;
+        this.oIndex = initialO !== null ? types.findIndex(a => a.id === initialO) : types.length - 1;
+        if (this.xIndex < 0) this.xIndex = 0;
+        if (this.oIndex < 0) this.oIndex = types.length - 1;
         this._buttons = [];
         this._bound = this._onClick.bind(this);
     }
